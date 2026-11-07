@@ -5,6 +5,16 @@ export const dynamic = "force-dynamic";
 
 type Check = { ok: true } | { ok: false; error: string };
 
+/** Every table created by prisma/migrations; a partial migration fails the check. */
+const REQUIRED_TABLES = ["User", "Profile", "BloodPressureReading", "GlucoseReading", "Medication", "ShareLink"];
+
+async function assertTables() {
+  const rows = await db.$queryRaw<{ name: string }[]>`SELECT name FROM sqlite_master WHERE type = 'table'`;
+  const present = new Set(rows.map((r) => r.name));
+  const missing = REQUIRED_TABLES.filter((t) => !present.has(t));
+  if (missing.length) throw new Error(`Missing tables: ${missing.join(", ")}. Run the full prisma/migrations SQL.`);
+}
+
 /** Short, secret-free description of a failure (variable names or DB error text only). */
 function describe(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
@@ -27,7 +37,7 @@ async function check(fn: () => unknown): Promise<Check> {
 export async function GET() {
   const env = await check(() => getEnv());
   const database = env.ok ? await check(() => db.$queryRaw`SELECT 1`) : { ok: false as const, error: "skipped: fix env first" };
-  const tables = database.ok ? await check(() => db.user.count()) : { ok: false as const, error: "skipped: fix database first" };
+  const tables = database.ok ? await check(assertTables) : { ok: false as const, error: "skipped: fix database first" };
 
   const ok = env.ok && database.ok && tables.ok;
   return Response.json(
