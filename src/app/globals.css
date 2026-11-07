@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens - slate neutrals with a teal accent.
+ * Every component uses these semantic names, never raw palette colours.
+ */
+@theme {
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-data), ui-monospace, monospace;
+
+  --color-canvas: #f8fafc;
+  --color-surface: #ffffff;
+  --color-sunken: #f1f5f9;
+  --color-line: #e2e8f0;
+  --color-line-soft: #f1f5f9;
+  --color-line-strong: #cbd5e1;
+
+  --color-ink: #0f172a;
+  --color-ink-hover: #020617;
+  --color-ink-2: #334155;
+  --color-ink-3: #64748b;
+  --color-paper: #f8fafc;
+
+  --color-accent: #0f766e;
+  --color-accent-ink: #115e59;
+  --color-accent-soft: #ccfbf1;
+
+  /* Severity scale (kept in sync with src/domain/severity.ts) */
+  --color-sev-low: #1d4ed8;
+  --color-sev-low-bg: #eff6ff;
+  --color-sev-normal: #047857;
+  --color-sev-normal-bg: #ecfdf5;
+  --color-sev-elevated: #b45309;
+  --color-sev-elevated-bg: #fffbeb;
+  --color-sev-high: #c2410c;
+  --color-sev-high-bg: #fff7ed;
+  --color-sev-critical: #b91c1c;
+  --color-sev-critical-bg: #fef2f2;
+
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-weight: 600;
+  }
+  /* Emphasis inside headlines is carried by colour, not italics. */
+  h1 em,
+  h2 em {
+    font-style: normal;
+  }
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Small uppercase mono label used for metadata and table headers. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* Subtle ruled-paper background for hero / auth panels. */
+@utility ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    color-mix(in oklab, var(--color-line) 70%, transparent) 31px,
+    color-mix(in oklab, var(--color-line) 70%, transparent) 32px
+  );
+}

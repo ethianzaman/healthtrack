@@ -1,0 +1,149 @@
+// HealthTrack data model.
+// Local dev uses SQLite (libSQL). For production switch `provider` to "postgresql"
+// and the driver adapter in src/server/db/client-factory.ts (see README).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum TimeOfDay {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+}
+
+enum MealTiming {
+  FASTING
+  BEFORE_MEAL
+  AFTER_MEAL
+  BEDTIME
+  RANDOM
+}
+
+enum GlucoseUnit {
+  MG_DL
+  MMOL_L
+}
+
+enum Arm {
+  LEFT
+  RIGHT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+/// Account owner (the person who logs in).
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  plan         Plan      @default(FREE)
+  timezone     String    @default("Asia/Dhaka")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  profiles     Profile[]
+}
+
+/// A patient whose data is tracked. One user can manage several (self, parents, ...).
+model Profile {
+  id                 String      @id @default(cuid())
+  userId             String
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  relation           String      @default("Self")
+  dateOfBirth        DateTime?
+  gender             Gender?
+  isDefault          Boolean     @default(false)
+  glucoseUnit        GlucoseUnit @default(MG_DL)
+  // Personal targets (doctor-adjustable). Glucose values are always stored in mg/dL.
+  bpSystolicTarget   Int         @default(130)
+  bpDiastolicTarget  Int         @default(80)
+  glucoseLow         Int         @default(70)
+  glucoseFastingMax  Int         @default(130)
+  glucosePostMealMax Int         @default(180)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  bloodPressureReadings BloodPressureReading[]
+  glucoseReadings       GlucoseReading[]
+  medications           Medication[]
+  shareLinks            ShareLink[]
+
+  @@index([userId])
+}
+
+model BloodPressureReading {
+  id         String    @id @default(cuid())
+  profileId  String
+  profile    Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  systolic   Int
+  diastolic  Int
+  pulse      Int?
+  timeOfDay  TimeOfDay
+  arm        Arm?
+  measuredAt DateTime
+  note       String?
+  createdAt  DateTime  @default(now())
+
+  @@index([profileId, measuredAt])
+}
+
+model GlucoseReading {
+  id         String     @id @default(cuid())
+  profileId  String
+  profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  valueMgDl  Float
+  timeOfDay  TimeOfDay
+  mealTiming MealTiming
+  measuredAt DateTime
+  note       String?
+  createdAt  DateTime   @default(now())
+
+  @@index([profileId, measuredAt])
+}
+
+model Medication {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name      String
+  dosage    String
+  schedule  String
+  notes     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+}
+
+/// Read-only link a patient can send to a doctor. Only the SHA-256 hash of the token is stored.
+model ShareLink {
+  id             String    @id @default(cuid())
+  profileId      String
+  profile        Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  tokenHash      String    @unique
+  label          String
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  lastAccessedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([profileId])
+}
