@@ -19,7 +19,7 @@ export const shareLinkRepository = {
   findActiveByHash(tokenHash: string, now = new Date()) {
     return db.shareLink.findFirst({
       where: { tokenHash, revokedAt: null, expiresAt: { gt: now } },
-      include: { profile: { include: { user: { select: { timezone: true } } } } },
+      include: { profile: { include: { user: { select: { timezone: true, status: true } } } } },
     });
   },
 

@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { planLimits } from "@/config/plans";
 import type { Plan } from "@/domain/enums";
 import type { GlucoseTargets } from "@/domain/glucose";
@@ -26,14 +27,19 @@ export function bpTargetOf(profile: Profile) {
   return { systolic: profile.bpSystolicTarget, diastolic: profile.bpDiastolicTarget };
 }
 
-export const profileService = {
-  list: profileRepository.listByUser,
+/** One query per request for the user's profiles; layout, switcher and active-profile lookup share it. */
+const listProfiles = cache((userId: string) => profileRepository.listByUser(userId));
 
-  /** Profile selected via cookie, falling back to the user's default. Never trusts the cookie blindly. */
+export const profileService = {
+  list: listProfiles,
+
+  /**
+   * Profile selected via cookie, falling back to the user's default (first in the list).
+   * Picked from the user's own profiles, so a forged cookie can't reach someone else's.
+   */
   async getActive(userId: string): Promise<Profile> {
-    const selectedId = (await cookies()).get(ACTIVE_PROFILE_COOKIE)?.value;
-    const selected = selectedId ? await profileRepository.findForUser(selectedId, userId) : null;
-    const profile = selected ?? (await profileRepository.findDefault(userId));
+    const [selectedId, profiles] = await Promise.all([cookies().then((c) => c.get(ACTIVE_PROFILE_COOKIE)?.value), listProfiles(userId)]);
+    const profile = profiles.find((p) => p.id === selectedId) ?? profiles[0];
     if (!profile) throw notFound("Profile");
     return profile;
   },

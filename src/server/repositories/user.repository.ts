@@ -9,6 +9,12 @@ const safeUserSelect = {
   name: true,
   plan: true,
   timezone: true,
+  status: true,
+  statusReason: true,
+  lastActiveAt: true,
+  emailVerifiedAt: true,
+  warningDeadlineAt: true,
+  warningRespondedAt: true,
   createdAt: true,
 } satisfies Prisma.UserSelect;
 
@@ -27,7 +33,7 @@ export const userRepository = {
     return db.user.count({ where: { email } }).then((n) => n > 0);
   },
 
-  createWithDefaultProfile(data: { email: string; name: string; passwordHash: string; timezone: string }) {
+  createWithDefaultProfile(data: { email: string; name: string; passwordHash: string; timezone: string; emailVerifiedAt: Date | null }) {
     return db.user.create({
       data: {
         ...data,
@@ -36,6 +42,22 @@ export const userRepository = {
       },
       select: safeUserSelect,
     });
+  },
+
+  findByEmail(email: string) {
+    return db.user.findUnique({ where: { email }, select: safeUserSelect });
+  },
+
+  markEmailVerified(id: string) {
+    return db.user.update({ where: { id }, data: { emailVerifiedAt: new Date() }, select: { id: true } });
+  },
+
+  touch(id: string, data: { lastActiveAt?: Date; lastLoginAt?: Date }) {
+    return db.user.update({ where: { id }, data, select: { id: true } });
+  },
+
+  setPasswordHash(id: string, passwordHash: string) {
+    return db.user.update({ where: { id }, data: { passwordHash }, select: { id: true } });
   },
 
   update(id: string, data: Pick<Prisma.UserUpdateInput, "name" | "timezone">) {

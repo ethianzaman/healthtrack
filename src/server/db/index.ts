@@ -8,7 +8,12 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 function client(): PrismaClient {
   if (!globalForPrisma.prisma) {
     const env = getEnv();
-    globalForPrisma.prisma = createPrismaClient({ url: env.DATABASE_URL, authToken: env.DATABASE_AUTH_TOKEN });
+    globalForPrisma.prisma = createPrismaClient({
+      url: env.DATABASE_URL,
+      authToken: env.DATABASE_AUTH_TOKEN,
+      // DB_LOG_QUERIES=1 prints every query (handy for spotting extra round trips).
+      logQueries: process.env.DB_LOG_QUERIES === "1",
+    });
   }
   return globalForPrisma.prisma;
 }

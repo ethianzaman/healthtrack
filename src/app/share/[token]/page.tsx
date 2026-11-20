@@ -9,6 +9,7 @@ import { HealthOverview } from "@/features/dashboard/components/health-overview"
 import { GlucoseTable } from "@/features/glucose/components/glucose-table";
 import { ageFrom, formatDate, formatDateTime, lastDaysRange } from "@/lib/dates";
 import { loadHealthData } from "@/server/services/health-data.service";
+import { activityService } from "@/server/services/activity.service";
 import { shareService } from "@/server/services/share.service";
 
 const SHARE_WINDOW_DAYS = 90;
@@ -20,6 +21,7 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
   const { token } = await params;
   const shared = await shareService.resolve(token);
   if (!shared) notFound();
+  await activityService.track("SHARE_VIEWED", { userId: shared.ownerId });
 
   const { profile, timezone, link } = shared;
   const range = lastDaysRange(SHARE_WINDOW_DAYS, timezone);

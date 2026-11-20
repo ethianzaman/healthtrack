@@ -28,6 +28,9 @@ export function MedicationForm() {
         <Field label="Schedule" error={errorOf("schedule")}>
           {(a) => <Input placeholder="e.g. 1+0+1 after meal" {...a} {...register("schedule")} />}
         </Field>
+        <Field label="For which condition (optional)" error={errorOf("condition")}>
+          {(a) => <Input placeholder="e.g. Hypertension" {...a} {...register("condition", optionalString)} />}
+        </Field>
         <Field label="Notes (optional)" error={errorOf("notes")}>
           {(a) => <Input placeholder="e.g. prescribed by Dr. Rahman" {...a} {...register("notes", optionalString)} />}
         </Field>

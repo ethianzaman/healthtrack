@@ -6,6 +6,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { EmptyState, PageHeader } from "@/components/ui/feedback";
 import { deleteMedication, toggleMedication } from "@/features/medications/actions";
 import { MedicationForm } from "@/features/medications/components/medication-form";
+import { PrescriptionScanner } from "@/features/medications/components/prescription-scanner";
 import type { Medication } from "@/generated/prisma/client";
 import { requireAppContext } from "@/server/auth/context";
 import { medicationRepository } from "@/server/repositories/medication.repository";
@@ -20,7 +21,13 @@ export default async function MedicationsPage() {
     <>
       <PageHeader eyebrow="Logbook · 04" title="Medications" description="Active medications are included in doctor reports." />
       <Card className="mb-6">
-        <CardHeader title="Add medication" description={`For ${profile.name}`} />
+        <CardHeader title="Scan a prescription" description="Take a photo and the medicines are filled in for you to check" />
+        <CardBody>
+          <PrescriptionScanner />
+        </CardBody>
+      </Card>
+      <Card className="mb-6">
+        <CardHeader title="Add medication manually" description={`For ${profile.name}`} />
         <CardBody>
           <MedicationForm />
         </CardBody>
@@ -34,6 +41,7 @@ export default async function MedicationsPage() {
             { header: "Medicine", cell: (m) => <span className="font-medium text-ink">{m.name}</span> },
             { header: "Dosage", cell: (m) => <span className="font-mono text-[13px]">{m.dosage}</span> },
             { header: "Schedule", cell: (m) => m.schedule },
+            { header: "For", cell: (m) => m.condition ?? "" },
             { header: "Notes", cell: (m) => <span className="text-ink-3">{m.notes}</span>, className: "hidden md:table-cell" },
             {
               header: "Status",

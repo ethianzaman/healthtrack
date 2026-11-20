@@ -184,7 +184,13 @@ export default async function LandingPage() {
 
       <footer className="mx-auto flex max-w-6xl flex-wrap items-start justify-between gap-6 px-5 py-10 text-[13px] text-ink-3">
         <Logo />
-        <p className="max-w-md">{siteConfig.disclaimer}</p>
+        <div className="max-w-md space-y-3">
+          <p>{siteConfig.disclaimer}</p>
+          <p className="flex gap-4">
+            <Link href="/terms" className="py-2 hover:text-ink hover:underline">Terms</Link>
+            <Link href="/privacy" className="py-2 hover:text-ink hover:underline">Privacy</Link>
+          </p>
+        </div>
       </footer>
     </div>
   );

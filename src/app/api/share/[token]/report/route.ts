@@ -3,6 +3,7 @@ import { parseReportQuery } from "@/features/reports/schemas";
 import { AppError } from "@/server/errors";
 import { logger } from "@/server/logger";
 import { generateReport, reportResponse } from "@/server/reports/report.service";
+import { activityService } from "@/server/services/activity.service";
 import { assertRateLimit } from "@/server/security/rate-limit";
 import { shareService } from "@/server/services/share.service";
 
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     assertRateLimit(`share-report:${shared.link.id}`, { limit: 20, windowMs: 60_000 });
     // Share links always produce PDF regardless of the owner's plan.
     const report = await generateReport({ profile: shared.profile, query: { ...parsed.data, format: "pdf" }, timeZone: shared.timezone });
+    await activityService.track("SHARE_REPORT_DOWNLOAD", { userId: shared.ownerId });
     return reportResponse(report);
   } catch (error) {
     if (error instanceof AppError) return Response.json({ error: error.message }, { status: error.status });

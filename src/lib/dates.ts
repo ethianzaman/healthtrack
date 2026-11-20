@@ -93,3 +93,14 @@ export function isValidTimeZone(timeZone: string) {
     return false;
   }
 }
+
+/** "just now", "5 min ago", "3 h ago", "2 d ago", else the date. For admin activity lists. */
+export function formatRelative(date: Date | null | undefined, timeZone: string, now = new Date()) {
+  if (!date) return "never";
+  const s = Math.round((now.getTime() - date.getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86_400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 30 * 86_400) return `${Math.floor(s / 86_400)} d ago`;
+  return formatDate(date, timeZone);
+}

@@ -180,8 +180,9 @@ function medicationSection({ medications }: HealthData): ReportSectionModel {
             {
               title: "Active medications",
               kind: "summary",
-              columns: ["Medication", "Dosage", "Schedule", "Notes"],
-              rows: medications.map((m) => ({ cells: [m.name, m.dosage, m.schedule, m.notes ?? ""] })),
+              columns: ["Medication", "Dosage", "Schedule", "For", "Notes"],
+              widths: [1.4, 0.8, 1, 1.2, 1.4],
+              rows: medications.map((m) => ({ cells: [m.name, m.dosage, m.schedule, m.condition ?? "", m.notes ?? ""] })),
             },
           ],
   };

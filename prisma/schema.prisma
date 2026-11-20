@@ -49,15 +49,96 @@ enum Gender {
 
 /// Account owner (the person who logs in).
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  name         String
-  passwordHash String
-  plan         Plan      @default(FREE)
-  timezone     String    @default("Asia/Dhaka")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  profiles     Profile[]
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  name                String
+  passwordHash        String
+  plan                Plan            @default(FREE)
+  timezone            String          @default("Asia/Dhaka")
+  /// Account standing, managed from /admin.
+  status              AccountStatus   @default(ACTIVE)
+  statusReason        String?
+  statusChangedAt     DateTime?
+  /// Usage metadata for the admin panel (throttled updates, no health data).
+  lastLoginAt         DateTime?
+  lastActiveAt        DateTime?
+  /// Set once the user proves the email is theirs (OTP). Null = unverified.
+  emailVerifiedAt     DateTime?
+  /// WARNED: reply-by date. Missing it leads to suspension.
+  warningDeadlineAt   DateTime?
+  warningResponse     String?
+  warningRespondedAt  DateTime?
+  /// SUSPENDED: the account and its data are permanently deleted on this date.
+  deletionScheduledAt DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  profiles            Profile[]
+  activity            ActivityEvent[]
+  codes               OneTimeCode[]
+}
+
+/// Short-lived emailed codes (email verification, password reset). Only a hash is stored.
+model OneTimeCode {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// VERIFY_EMAIL | RESET_PASSWORD
+  purpose    String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, purpose, createdAt])
+}
+
+/// What remains after an account is deleted: proof of when and why, no personal data.
+model DeletedAccount {
+  id        String   @id @default(cuid())
+  /// SHA-256 of the email, so a repeat case can be recognised without keeping the address.
+  emailHash String
+  reason    String?
+  deletedBy String
+  deletedAt DateTime @default(now())
+
+  @@index([emailHash])
+}
+
+enum AccountStatus {
+  ACTIVE
+  WARNED
+  SUSPENDED
+}
+
+/// What a user did and when - never what they recorded. Powers the admin panel.
+model ActivityEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// e.g. LOGIN, REPORT_DOWNLOAD (see src/domain/activity.ts)
+  type      String
+  /// Small non-health detail, e.g. "pdf".
+  detail    String?
+  /// Two-letter country from the edge (the IP itself is not stored).
+  country   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+}
+
+/// Audit trail of admin decisions (who suspended whom, when and why).
+model AdminAction {
+  id           String   @id @default(cuid())
+  adminEmail   String
+  targetUserId String?
+  targetEmail  String
+  action       String
+  reason       String?
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
 }
 
 /// A patient whose data is tracked. One user can manage several (self, parents, ...).
@@ -83,6 +164,7 @@ model Profile {
   bloodPressureReadings BloodPressureReading[]
   glucoseReadings       GlucoseReading[]
   medications           Medication[]
+  prescriptions         Prescription[]
   shareLinks            ShareLink[]
 
   @@index([userId])
@@ -119,18 +201,41 @@ model GlucoseReading {
 }
 
 model Medication {
-  id        String   @id @default(cuid())
-  profileId String
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  name      String
-  dosage    String
-  schedule  String
-  notes     String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String        @id @default(cuid())
+  profileId      String
+  profile        Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name           String
+  dosage         String
+  schedule       String
+  notes          String?
+  /// What the medicine treats, e.g. "Hypertension".
+  condition      String?
+  active         Boolean       @default(true)
+  /// Set when the medicine was added from a scanned prescription.
+  prescriptionId String?
+  prescription   Prescription? @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([profileId])
+  @@index([prescriptionId])
+}
+
+/// A doctor's prescription, read from a photo or typed in. Medicines link back to it.
+model Prescription {
+  id          String       @id @default(cuid())
+  profileId   String
+  profile     Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  doctorName  String?
+  issuedOn    DateTime?
+  /// Diagnosis / what the treatment is for.
+  condition   String?
+  notes       String?
+  medications Medication[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([profileId, issuedOn])
 }
 
 /// Read-only link a patient can send to a doctor. Only the SHA-256 hash of the token is stored.

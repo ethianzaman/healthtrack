@@ -3,7 +3,9 @@ import { Logo } from "@/components/layout/logo";
 import { getCurrentUser } from "@/server/auth/context";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  if (await getCurrentUser()) redirect("/dashboard");
+  // Only confirmed accounts skip these pages; an unconfirmed one still needs /verify-email.
+  const user = await getCurrentUser();
+  if (user?.emailVerifiedAt) redirect("/dashboard");
   return (
     <div className="grid min-h-dvh lg:grid-cols-[1fr_1.1fr]">
       {/* Left: dark panel with a handwritten-log feel */}

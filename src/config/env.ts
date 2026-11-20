@@ -7,6 +7,17 @@ const envSchema = z.object({
   DATABASE_AUTH_TOKEN: z.string().optional(),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
   APP_URL: z.url().default("http://localhost:3000"),
+  /** Comma-separated emails allowed into /admin. Empty = nobody. */
+  ADMIN_EMAILS: z.string().optional(),
+  /** Gmail address + 16-character App Password used to send emails (OTP, warnings). */
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  /** "console" prints emails to the server log instead of sending (local testing). */
+  MAIL_TRANSPORT: z.enum(["smtp", "console"]).optional(),
+  /** Shown in emails and legal pages; defaults to SMTP_USER. */
+  SUPPORT_EMAIL: z.string().optional(),
+  /** Vercel sends this as a Bearer token to cron routes. */
+  CRON_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

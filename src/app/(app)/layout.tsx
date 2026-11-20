@@ -6,6 +6,8 @@ import { logoutAction } from "@/features/auth/actions";
 import { ProfileSwitcher } from "@/features/profiles/components/profile-switcher";
 import { requireAppContext } from "@/server/auth/context";
 import { profileService } from "@/server/services/profile.service";
+import { WarningBanner } from "@/features/account/components/warning-banner";
+import { formatDate } from "@/lib/dates";
 
 function initials(name: string) {
   return name
@@ -60,6 +62,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
         <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-6 sm:px-6 sm:pt-8 lg:px-10 lg:py-10">
+          {user.status === "WARNED" ? (
+            <WarningBanner
+              reason={user.statusReason ?? "Your account is under review."}
+              deadline={user.warningDeadlineAt ? formatDate(user.warningDeadlineAt, user.timezone) : "soon"}
+              responded={Boolean(user.warningRespondedAt)}
+            />
+          ) : null}
           {children}
         </main>
       </div>

@@ -5,6 +5,7 @@ import { AppError } from "@/server/errors";
 import { logger } from "@/server/logger";
 import { generateReport, reportResponse } from "@/server/reports/report.service";
 import { assertRateLimit } from "@/server/security/rate-limit";
+import { activityService } from "@/server/services/activity.service";
 
 /** Errors go back to the form page (this endpoint is hit by a plain browser form). */
 function backToForm(request: NextRequest, message: string) {
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     assertRateLimit(`report:${ctx.user.id}`, { limit: 30, windowMs: 60_000 });
     const report = await generateReport({ profile: ctx.profile, query: parsed.data, timeZone: ctx.user.timezone, plan: ctx.user.plan });
+    await activityService.track("REPORT_DOWNLOAD", { userId: ctx.user.id, detail: parsed.data.format });
     return reportResponse(report);
   } catch (error) {
     if (error instanceof AppError) return backToForm(request, error.message);

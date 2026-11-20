@@ -7,6 +7,7 @@ import { AppError, notFound } from "@/server/errors";
 import { profileRepository } from "@/server/repositories/profile.repository";
 import { shareLinkRepository } from "@/server/repositories/share-link.repository";
 import { generateToken, hashToken } from "@/server/security/tokens";
+import { activityService } from "./activity.service";
 
 const DAY_MS = 86_400_000;
 
@@ -30,6 +31,7 @@ export const shareService = {
       label: input.label,
       expiresAt: new Date(Date.now() + input.expiresInDays * DAY_MS),
     });
+    await activityService.track("SHARE_CREATED", { userId: user.id, detail: `${input.expiresInDays}d` });
     return { url: `${getEnv().APP_URL}/share/${token}` };
   },
 
@@ -41,8 +43,9 @@ export const shareService = {
   async resolve(token: string) {
     if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) return null;
     const link = await shareLinkRepository.findActiveByHash(hashToken(token));
-    if (!link) return null;
+    // Links stop working while the owner's account is suspended.
+    if (!link || link.profile.user.status === "SUSPENDED") return null;
     await shareLinkRepository.touch(link.id);
-    return { link, profile: link.profile, timezone: link.profile.user.timezone };
+    return { link, profile: link.profile, ownerId: link.profile.userId, timezone: link.profile.user.timezone };
   },
 };

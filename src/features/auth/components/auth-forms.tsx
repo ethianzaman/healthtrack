@@ -16,7 +16,7 @@ export function LoginForm() {
     schema: loginSchema,
     action: loginAction,
     defaultValues: { email: "", password: "" },
-    onSuccess: () => router.replace("/dashboard"),
+    onSuccess: ({ needsVerification }) => router.replace(needsVerification ? "/verify-email" : "/dashboard"),
   });
 
   return (
@@ -27,6 +27,11 @@ export function LoginForm() {
       <Field label="Password" error={errorOf("password")}>
         {(a) => <Input type="password" autoComplete="current-password" {...a} {...form.register("password")} />}
       </Field>
+      <p className="-mt-2 text-right text-sm">
+        <Link href="/forgot-password" className="inline-block py-2 text-ink-2 hover:text-ink hover:underline">
+          Forgot password?
+        </Link>
+      </p>
       <StatusMessage status={status} />
       <Button type="submit" loading={isSubmitting} className="w-full">
         Sign in
@@ -47,7 +52,7 @@ export function RegisterForm() {
     schema: registerSchema,
     action: registerAction,
     defaultValues: { name: "", email: "", password: "", timezone: "Asia/Dhaka" },
-    onSuccess: () => router.replace("/dashboard"),
+    onSuccess: ({ needsVerification }) => router.replace(needsVerification ? "/verify-email" : "/dashboard"),
   });
 
   // Capture the browser's timezone so reports show local times.
@@ -70,6 +75,11 @@ export function RegisterForm() {
       <Button type="submit" loading={isSubmitting} className="w-full">
         Create account
       </Button>
+      <p className="text-center text-[13px] leading-relaxed text-ink-3">
+        By creating an account you agree to our{" "}
+        <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link> and{" "}
+        <Link href="/privacy" className="underline underline-offset-2 hover:text-ink">Privacy Policy</Link>.
+      </p>
       <p className="text-center text-sm text-ink-3">
         Already have an account?{" "}
         <Link href="/login" className="inline-block py-2 font-medium text-accent hover:underline">
