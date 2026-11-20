@@ -31,7 +31,8 @@ export const userRepository = {
     return db.user.create({
       data: {
         ...data,
-        profiles: { create: { name: data.name, relation: "Self", isDefault: true } },
+        // mmol/L is what most of our users (South Asia, UK, EU) read on their meters.
+        profiles: { create: { name: data.name, relation: "Self", isDefault: true, glucoseUnit: "MMOL_L" } },
       },
       select: safeUserSelect,
     });

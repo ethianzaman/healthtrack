@@ -2,7 +2,7 @@ import "server-only";
 import { Document, Page, renderToBuffer, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { SEVERITY_HEX } from "@/domain/severity";
 import type { ReportGenerator } from "../types";
-import type { ReportModel, ReportSectionModel, ReportTable } from "../view-model";
+import { cellSeverityOf, type ReportModel, type ReportSectionModel, type ReportTable } from "../view-model";
 
 const BRAND = "#0f766e";
 const ACCENT = "#0f766e";
@@ -29,6 +29,7 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: "row", backgroundColor: BRAND },
   cell: { flex: 1, padding: 4 },
   headCell: { flex: 1, padding: 4, color: "#ffffff", fontFamily: "Helvetica-Bold" },
+  footnotes: { marginTop: 6, fontSize: 8, color: MUTED, gap: 2 },
   empty: { color: MUTED, fontStyle: "italic", marginBottom: 8 },
   footer: { position: "absolute", bottom: 20, left: 32, right: 32, flexDirection: "row", justifyContent: "space-between", fontSize: 7, color: MUTED },
 });
@@ -46,15 +47,23 @@ function Table({ table, breakBefore = false }: { table: ReportTable; breakBefore
       {table.rows.map((row, i) => (
         <View key={i} style={[styles.row, i % 2 === 1 ? { backgroundColor: "#f8fafc" } : {}]} wrap={false}>
           {row.cells.map((cell, j) => {
-            const highlight = j === table.statusColumn && row.severity && row.severity !== "normal";
+            const severity = cellSeverityOf(table, row, j);
             return (
-              <Text key={j} style={[styles.cell, flex(j), highlight ? { color: SEVERITY_HEX[row.severity!], fontFamily: "Helvetica-Bold" } : {}]}>
+              <Text key={j} style={[styles.cell, flex(j), severity ? { color: SEVERITY_HEX[severity], fontFamily: "Helvetica-Bold" } : {}]}>
                 {cell}
               </Text>
             );
           })}
         </View>
       ))}
+      {table.footnotes?.length ? (
+        <View style={styles.footnotes}>
+          <Text style={styles.label}>Notes</Text>
+          {table.footnotes.map((note, i) => (
+            <Text key={i}>* {note}</Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

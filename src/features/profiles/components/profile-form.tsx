@@ -15,7 +15,7 @@ const unitOptions = toOptions(GLUCOSE_UNIT_LABELS);
 export const NEW_PROFILE_DEFAULTS: ProfileInput = {
   name: "",
   relation: "",
-  glucoseUnit: "MG_DL",
+  glucoseUnit: "MMOL_L",
   bpSystolicTarget: 130,
   bpDiastolicTarget: 80,
   glucoseLow: DEFAULT_GLUCOSE_TARGETS.low,

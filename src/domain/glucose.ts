@@ -73,6 +73,33 @@ export function formatGlucose(valueMgDl: number, unit: GlucoseUnit, withUnit = t
   return withUnit ? `${text} ${unit === GlucoseUnit.MMOL_L ? "mmol/L" : "mg/dL"}` : text;
 }
 
+export function otherGlucoseUnit(unit: GlucoseUnit): GlucoseUnit {
+  return unit === GlucoseUnit.MMOL_L ? GlucoseUnit.MG_DL : GlucoseUnit.MMOL_L;
+}
+
+/**
+ * Both units, preferred first, so a report reads the same for any doctor.
+ * Full: "6.1 mmol/L (110 mg/dL)". Compact (table cells): "6.1 (110)".
+ */
+export function formatGlucoseDual(valueMgDl: number, unit: GlucoseUnit, compact = false) {
+  const other = otherGlucoseUnit(unit);
+  return compact
+    ? `${formatGlucose(valueMgDl, unit, false)} (${formatGlucose(valueMgDl, other, false)})`
+    : `${formatGlucose(valueMgDl, unit)} (${formatGlucose(valueMgDl, other)})`;
+}
+
+/** A range in both units: "70-130 mg/dL (3.9-7.2 mmol/L)". */
+export function formatGlucoseRangeDual(lowMgDl: number, highMgDl: number, unit: GlucoseUnit) {
+  const part = (u: GlucoseUnit) => `${formatGlucose(lowMgDl, u, false)}-${formatGlucose(highMgDl, u)}`;
+  return `${part(unit)} (${part(otherGlucoseUnit(unit))})`;
+}
+
+/** Column-header hint for compact dual values, e.g. "mmol/L (mg/dL)". */
+export function dualUnitLabel(unit: GlucoseUnit) {
+  const name = (u: GlucoseUnit) => (u === GlucoseUnit.MMOL_L ? "mmol/L" : "mg/dL");
+  return `${name(unit)} (${name(otherGlucoseUnit(unit))})`;
+}
+
 /**
  * Estimated A1C from average glucose (ADAG formula, Nathan et al. 2008).
  * Indicative only - meaningful with several weeks of regular readings.

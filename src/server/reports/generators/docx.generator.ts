@@ -17,7 +17,7 @@ import {
 } from "docx";
 import { SEVERITY_HEX } from "@/domain/severity";
 import type { ReportGenerator } from "../types";
-import type { ReportSectionModel, ReportTable } from "../view-model";
+import { cellSeverityOf, type ReportSectionModel, type ReportTable } from "../view-model";
 
 const BRAND = "0F766E";
 const ACCENT = "0F766E";
@@ -65,13 +65,20 @@ function table(t: ReportTable) {
         ...t.rows.map(
           (r) =>
             new TableRow({
-              children: r.cells.map((c, i) =>
-                cell(c, { color: i === t.statusColumn && r.severity && r.severity !== "normal" ? hex(SEVERITY_HEX[r.severity]) : undefined }),
-              ),
+              children: r.cells.map((c, i) => {
+                const severity = cellSeverityOf(t, r, i);
+                return cell(c, { color: severity ? hex(SEVERITY_HEX[severity]) : undefined });
+              }),
             }),
         ),
       ],
     }),
+    ...(t.footnotes?.length
+      ? [
+          new Paragraph({ spacing: { before: 120 }, children: [new TextRun({ text: "Notes", bold: true, size: 16, color: "64748B" })] }),
+          ...t.footnotes.map((note) => new Paragraph({ children: [new TextRun({ text: `* ${note}`, size: 16, color: "64748B" })] })),
+        ]
+      : []),
   ];
 }
 
