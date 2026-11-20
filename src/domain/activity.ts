@@ -38,8 +38,9 @@ export const ACTIVITY_LABELS: Record<ActivityType, string> = {
 export function parseAdminEmails(value: string | undefined): Set<string> {
   return new Set(
     (value ?? "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
+      // Tolerate values pasted with quotes or separated by spaces/semicolons in the Vercel dashboard.
+      .split(/[,;\s]+/)
+      .map((e) => e.replace(/["'`]/g, "").trim().toLowerCase())
       .filter((e) => e.includes("@")),
   );
 }

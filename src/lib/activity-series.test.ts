@@ -29,5 +29,7 @@ describe("parseAdminEmails", () => {
   it("normalises case and spaces and ignores junk", () => {
     expect([...parseAdminEmails(" Owner@Example.com, ,not-an-email,b@x.io")]).toEqual(["owner@example.com", "b@x.io"]);
     expect(parseAdminEmails(undefined).size).toBe(0);
+    expect([...parseAdminEmails('"Me@Gmail.com"')]).toEqual(["me@gmail.com"]);
+    expect([...parseAdminEmails("'a@x.io'; b@y.io  c@z.io")]).toEqual(["a@x.io", "b@y.io", "c@z.io"]);
   });
 });
