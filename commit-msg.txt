@@ -1,0 +1,25 @@
+Redesign health reports and add modern date and time pickers
+
+Reports (PDF and Word)
+- Blood Pressure Report and Glucose Report each start on their own page
+  with a large headline; glucose uses a landscape page for its wide table
+- One row per day: morning / evening blood pressure and fasting, before
+  and 2h after meal glucose sit side by side on the same row
+- A Status column sums up each day with its worst reading (Normal,
+  Elevated, High, Low, Danger) as a coloured pill, per ACC/AHA 2017 and
+  ADA; out-of-range values are coloured too
+- Glucose shown as "5.4 mmol/L or 97 mg/dL", blood pressure with mmHg,
+  each with the time beside it in small grey text
+- Status legend under each table; medication list on its own page
+- Patient details, averages and summary tables removed for a cleaner read
+- Choose optional columns before generating (status, time, pulse, arm,
+  notes); doctor share links always get every column
+- Whole words wrap in PDF tables (no hyphen splits)
+
+Date and time input
+- New calendar date picker: one tap selects and closes, Today and Clear
+  buttons, Saturday week start, month/year dropdowns for date of birth
+- New time picker with hour, minute and AM/PM columns that update the
+  value immediately, plus Now and Done
+- Both open as a popover on desktop and a bottom sheet on phones
+- Used for readings, report dates, date of birth and prescription date

@@ -1,146 +1,162 @@
 import "server-only";
-import { Document, Page, renderToBuffer, StyleSheet, Text, View } from "@react-pdf/renderer";
-import { SEVERITY_HEX } from "@/domain/severity";
+import { Document, Font, Page, renderToBuffer, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { SEVERITY_BG_HEX, SEVERITY_HEX, type Severity } from "@/domain/severity";
 import type { ReportGenerator } from "../types";
-import { cellSeverityOf, type ReportModel, type ReportSectionModel, type ReportTable } from "../view-model";
+import { valueSeverity, type CellLine, type ReportModel, type ReportRow, type ReportSectionModel, type ReportTable } from "../view-model";
 
-const BRAND = "#0f766e";
-const ACCENT = "#0f766e";
+// Wrap whole words only: medical terms split with hyphens ("di-abetes") read badly.
+Font.registerHyphenationCallback((word) => [word]);
+
+const INK = "#0f172a";
 const MUTED = "#64748b";
-const BORDER = "#e2e8f0";
+const FAINT = "#94a3b8";
+const LINE = "#e2e8f0";
+const ACCENT = "#0f766e";
 
 const styles = StyleSheet.create({
-  page: { padding: 32, paddingBottom: 48, fontSize: 9, fontFamily: "Helvetica", color: "#0f172a" },
-  header: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1.5, borderBottomColor: BRAND, paddingBottom: 8, marginBottom: 12 },
-  brand: { fontSize: 18, fontFamily: "Helvetica-Bold", color: ACCENT },
-  title: { fontSize: 11, marginTop: 2 },
-  meta: { fontSize: 8, color: MUTED, textAlign: "right" },
-  patientGrid: { flexDirection: "row", flexWrap: "wrap", backgroundColor: "#f8fafc", borderRadius: 2, padding: 8, marginBottom: 12 },
-  patientItem: { width: "33%", marginBottom: 4 },
-  label: { fontSize: 7, color: MUTED, textTransform: "uppercase" },
-  value: { fontSize: 9, fontFamily: "Helvetica-Bold" },
-  sectionTitle: { fontSize: 16, fontFamily: "Helvetica-Bold", color: BRAND, marginTop: 8, marginBottom: 6 },
-  facts: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
-  fact: { borderLeftWidth: 1.5, borderLeftColor: ACCENT, padding: 6, marginRight: 6, marginBottom: 6, minWidth: 80 },
-  insight: { flexDirection: "row", marginBottom: 3 },
-  insightBar: { width: 3, marginRight: 6 },
-  tableTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", marginTop: 6, marginBottom: 4 },
-  row: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: BORDER },
-  headRow: { flexDirection: "row", backgroundColor: BRAND },
-  cell: { flex: 1, padding: 4 },
-  headCell: { flex: 1, padding: 4, color: "#ffffff", fontFamily: "Helvetica-Bold" },
-  footnotes: { marginTop: 6, fontSize: 8, color: MUTED, gap: 2 },
-  empty: { color: MUTED, fontStyle: "italic", marginBottom: 8 },
-  footer: { position: "absolute", bottom: 20, left: 32, right: 32, flexDirection: "row", justifyContent: "space-between", fontSize: 7, color: MUTED },
+  page: { paddingTop: 30, paddingHorizontal: 36, paddingBottom: 52, fontSize: 9.5, fontFamily: "Helvetica", color: INK },
+  running: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingBottom: 8, marginBottom: 18, borderBottomWidth: 0.6, borderBottomColor: LINE },
+  brand: { fontSize: 8, fontFamily: "Helvetica-Bold", color: ACCENT, letterSpacing: 1.2 },
+  runningMeta: { fontSize: 8, color: MUTED },
+  accentBar: { width: 34, height: 3, backgroundColor: ACCENT, borderRadius: 2, marginBottom: 10 },
+  headline: { fontSize: 26, fontFamily: "Helvetica-Bold", color: INK, letterSpacing: -0.4 },
+  period: { marginTop: 4, fontSize: 10.5, color: MUTED },
+  key: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 14, marginBottom: 4 },
+  keyLabel: { fontSize: 7.5, color: MUTED, marginRight: 6, letterSpacing: 0.6 },
+  table: { marginTop: 16 },
+  headRow: { flexDirection: "row", borderBottomWidth: 1.2, borderBottomColor: INK, paddingBottom: 6 },
+  headCell: { paddingHorizontal: 6, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: MUTED, letterSpacing: 0.6, textTransform: "uppercase" },
+  row: { flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: LINE, paddingVertical: 7 },
+  cell: { paddingHorizontal: 6, gap: 3 },
+  value: { fontSize: 9.5 },
+  note: { fontSize: 7.5, color: FAINT },
+  pill: { alignSelf: "flex-start", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2.5 },
+  pillText: { fontSize: 8, fontFamily: "Helvetica-Bold" },
+  footnote: { marginTop: 12, fontSize: 7.5, color: MUTED, lineHeight: 1.4 },
+  empty: { marginTop: 18, fontSize: 11, color: MUTED },
+  footer: { position: "absolute", bottom: 22, left: 36, right: 36, flexDirection: "row", justifyContent: "space-between", fontSize: 7, color: FAINT },
 });
 
-function Table({ table, breakBefore = false }: { table: ReportTable; breakBefore?: boolean }) {
+function Pill({ label, severity }: { label: string; severity: Severity }) {
+  return (
+    <View style={[styles.pill, { backgroundColor: SEVERITY_BG_HEX[severity] }]}>
+      <Text style={[styles.pillText, { color: SEVERITY_HEX[severity] }]}>{label}</Text>
+    </View>
+  );
+}
+
+/** Value in normal size, its time / details beside it in small grey. */
+function Lines({ lines, severity, bold }: { lines: CellLine[]; severity?: Severity; bold?: boolean }) {
+  return (
+    <>
+      {lines.map((l, i) => (
+        // A wrapping row (not nested text): the note sits beside the value when it fits and
+        // drops below cleanly when it doesn't, instead of react-pdf breaking the run with a "-".
+        <View key={i} style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "flex-end", columnGap: 4 }}>
+          <Text style={[styles.value, bold ? { fontFamily: "Helvetica-Bold" } : {}, severity ? { color: SEVERITY_HEX[severity] } : {}]}>{l.text}</Text>
+          {l.note ? <Text style={[styles.note, { paddingBottom: 0.6 }]}>{l.note}</Text> : null}
+        </View>
+      ))}
+    </>
+  );
+}
+
+function Row({ table, row, index }: { table: ReportTable; row: ReportRow; index: number }) {
   const flex = (i: number) => ({ flex: table.widths?.[i] ?? 1 });
   return (
-    <View break={breakBefore}>
-      <Text style={styles.tableTitle}>{table.title}</Text>
+    <View style={[styles.row, index % 2 === 1 ? { backgroundColor: "#fafbfc" } : {}]} wrap={false}>
+      {row.cells.map((lines, i) => (
+        <View key={i} style={[styles.cell, flex(i)]}>
+          {i === table.statusColumn && row.severity ? (
+            <Pill label={lines[0]?.text ?? ""} severity={row.severity} />
+          ) : (
+            <Lines lines={lines} severity={valueSeverity(row, i)} bold={i === 0} />
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Table({ table }: { table: ReportTable }) {
+  const flex = (i: number) => ({ flex: table.widths?.[i] ?? 1 });
+  return (
+    <View style={styles.table}>
+      {/* Repeats at the top of every page the table runs onto. */}
       <View style={styles.headRow} fixed>
         {table.columns.map((c, i) => (
-          <Text key={c} style={[styles.headCell, flex(i)]}>{c}</Text>
+          <Text key={c} style={[styles.headCell, flex(i)]}>
+            {c}
+          </Text>
         ))}
       </View>
       {table.rows.map((row, i) => (
-        <View key={i} style={[styles.row, i % 2 === 1 ? { backgroundColor: "#f8fafc" } : {}]} wrap={false}>
-          {row.cells.map((cell, j) => {
-            const severity = cellSeverityOf(table, row, j);
-            return (
-              <Text key={j} style={[styles.cell, flex(j), severity ? { color: SEVERITY_HEX[severity], fontFamily: "Helvetica-Bold" } : {}]}>
-                {cell}
-              </Text>
-            );
-          })}
-        </View>
+        <Row key={i} table={table} row={row} index={i} />
       ))}
-      {table.footnotes?.length ? (
-        <View style={styles.footnotes}>
-          <Text style={styles.label}>Notes</Text>
-          {table.footnotes.map((note, i) => (
-            <Text key={i}>* {note}</Text>
-          ))}
-        </View>
-      ) : null}
+      {table.footnotes?.map((f, i) => (
+        <Text key={i} style={styles.footnote}>
+          {f}
+        </Text>
+      ))}
     </View>
   );
 }
 
-function Section({ section }: { section: ReportSectionModel }) {
+const STATUS_KEY: { label: string; severity: Severity }[] = [
+  { label: "Normal", severity: "normal" },
+  { label: "Elevated", severity: "elevated" },
+  { label: "High", severity: "high" },
+  { label: "Low", severity: "low" },
+  { label: "Danger", severity: "critical" },
+];
+
+function SectionPages({ model, section }: { model: ReportModel; section: ReportSectionModel }) {
+  const hasStatus = section.tables.some((t) => t.statusColumn !== undefined);
   return (
-    <View>
-      <Text style={styles.sectionTitle}>{section.title}</Text>
-      {section.emptyMessage ? <Text style={styles.empty}>{section.emptyMessage}</Text> : null}
-      {section.keyFacts.length > 0 && !section.emptyMessage ? (
-        <View style={styles.facts}>
-          {section.keyFacts.map((f) => (
-            <View key={f.label} style={styles.fact}>
-              <Text style={styles.label}>{f.label}</Text>
-              <Text style={styles.value}>{f.value}</Text>
+    <Page size="A4" orientation={section.orientation ?? "portrait"} style={styles.page}>
+      <View style={styles.running} fixed>
+        <Text style={styles.brand}>{model.appName.toUpperCase()}</Text>
+        <Text style={styles.runningMeta}>
+          {section.title} · {model.periodLabel}
+        </Text>
+      </View>
+
+      <View style={styles.accentBar} />
+      <Text style={styles.headline}>{section.title}</Text>
+      <Text style={styles.period}>{model.periodLabel}</Text>
+      {hasStatus ? (
+        <View style={styles.key}>
+          <Text style={styles.keyLabel}>STATUS</Text>
+          {STATUS_KEY.map((k) => (
+            <View key={k.label} style={{ marginRight: 5 }}>
+              <Pill label={k.label} severity={k.severity} />
             </View>
           ))}
         </View>
       ) : null}
-      {section.insights.map((insight) => (
-        <View key={insight.id} style={styles.insight}>
-          <View style={[styles.insightBar, { backgroundColor: SEVERITY_HEX[insight.severity] }]} />
-          <Text>
-            <Text style={{ fontFamily: "Helvetica-Bold" }}>{insight.title}. </Text>
-            {insight.detail}
-          </Text>
-        </View>
+
+      {section.emptyMessage ? <Text style={styles.empty}>{section.emptyMessage}</Text> : null}
+      {section.tables.map((t, i) => (
+        <Table key={i} table={t} />
       ))}
-      {section.tables
-        .filter((t) => t.kind === "summary")
-        .map((t) => (
-          <Table key={t.title} table={t} />
-        ))}
-    </View>
+
+      <View style={styles.footer} fixed>
+        <Text style={{ width: "78%" }}>
+          {model.disclaimer} Generated {model.generatedAt}.
+        </Text>
+        <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
+      </View>
+    </Page>
   );
 }
 
+/** One page group per section: Blood Pressure Report, Glucose Report (landscape), Medication List. */
 function ReportDocument({ model }: { model: ReportModel }) {
   return (
     <Document title={model.title} author={model.appName} creator={model.appName}>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header} fixed>
-          <View>
-            <Text style={styles.brand}>{model.appName}</Text>
-            <Text style={styles.title}>{model.title}</Text>
-          </View>
-          <View>
-            <Text style={styles.meta}>Period: {model.periodLabel}</Text>
-            <Text style={styles.meta}>Generated: {model.generatedAt}</Text>
-          </View>
-        </View>
-
-        <View style={styles.patientGrid}>
-          {model.patient.map((p) => (
-            <View key={p.label} style={styles.patientItem}>
-              <Text style={styles.label}>{p.label}</Text>
-              <Text style={styles.value}>{p.value}</Text>
-            </View>
-          ))}
-        </View>
-
-        {model.sections.map((s) => (
-          <Section key={s.title} section={s} />
-        ))}
-
-        {/* Appendix: every reading, each table starting on a new page. */}
-        {model.sections
-          .flatMap((s) => s.tables.filter((t) => t.kind === "detail"))
-          .map((t) => (
-            <Table key={t.title} table={t} breakBefore />
-          ))}
-
-        <View style={styles.footer} fixed>
-          <Text style={{ width: "80%" }}>{model.disclaimer}</Text>
-          <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`} />
-        </View>
-      </Page>
+      {model.sections.map((section) => (
+        <SectionPages key={section.title} model={model} section={section} />
+      ))}
     </Document>
   );
 }

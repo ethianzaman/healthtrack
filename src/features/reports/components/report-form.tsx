@@ -2,9 +2,14 @@
 
 import { useState } from "react";
 import { buttonClasses } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/form-controls";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Field } from "@/components/ui/form-controls";
 import { cn } from "@/lib/utils";
 import {
+  BP_REPORT_COLUMN_LABELS,
+  BP_REPORT_COLUMNS,
+  GLUCOSE_REPORT_COLUMN_LABELS,
+  GLUCOSE_REPORT_COLUMNS,
   REPORT_FORMAT_LABELS,
   REPORT_FORMATS,
   REPORT_SECTION_LABELS,
@@ -18,6 +23,28 @@ function shift(ymd: string, days: number) {
   const d = new Date(`${ymd}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() - days);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Checkbox group for optional report columns. The hidden "-" marker tells the server the
+ * choice was made here, so unticking everything means "no optional columns", not "all".
+ */
+function ColumnPicker({ legend, hint, name, options }: { legend: string; hint: string; name: string; options: { value: string; label: string }[] }) {
+  return (
+    <fieldset>
+      <legend className="eyebrow mb-1">{legend}</legend>
+      <p className="mb-2 text-xs text-ink-3">{hint}</p>
+      <input type="hidden" name={name} value="-" />
+      <div className="flex flex-col gap-1">
+        {options.map((o) => (
+          <label key={o.value} className="flex min-h-10 items-center gap-2 text-sm text-ink-2 sm:min-h-8">
+            <input type="checkbox" name={name} value={o.value} defaultChecked className="h-4 w-4 accent-accent" />
+            {o.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
 }
 
 /**
@@ -55,8 +82,8 @@ export function ReportForm({ today, allowedFormats, action = "/api/reports" }: {
           })}
         </div>
         <div className="grid max-w-md grid-cols-1 gap-4 min-[400px]:grid-cols-2">
-          <Field label="From">{(a) => <Input type="date" name="from" value={from} max={to} onChange={(e) => setFrom(e.target.value)} required {...a} />}</Field>
-          <Field label="To">{(a) => <Input type="date" name="to" value={to} min={from} max={today} onChange={(e) => setTo(e.target.value)} required {...a} />}</Field>
+          <Field label="From">{(a) => <DatePicker name="from" value={from} max={to} onChange={setFrom} {...a} />}</Field>
+          <Field label="To">{(a) => <DatePicker name="to" value={to} min={from} max={today} onChange={setTo} {...a} />}</Field>
         </div>
       </div>
 
@@ -65,12 +92,29 @@ export function ReportForm({ today, allowedFormats, action = "/api/reports" }: {
         <div className="flex flex-wrap gap-4">
           {REPORT_SECTIONS.map((s) => (
             <label key={s} className="flex min-h-11 items-center gap-2 text-sm text-ink-2 sm:min-h-0">
-              <input type="checkbox" name="sections" value={s} defaultChecked className="h-4 w-4 accent-[#0f172a]" />
+              <input type="checkbox" name="sections" value={s} defaultChecked className="h-4 w-4 accent-ink" />
               {REPORT_SECTION_LABELS[s]}
             </label>
           ))}
         </div>
       </fieldset>
+
+      {format !== "csv" ? (
+        <div className="grid gap-6 sm:grid-cols-2">
+          <ColumnPicker
+            legend="Blood pressure columns"
+            hint="One row per day. Date and the Morning / Night columns are always included."
+            name="bpCols"
+            options={BP_REPORT_COLUMNS.map((c) => ({ value: c, label: BP_REPORT_COLUMN_LABELS[c] }))}
+          />
+          <ColumnPicker
+            legend="Glucose columns"
+            hint="One row per day. Fasting, before / after meal columns and both units (mmol/L or mg/dL) are always included."
+            name="glucoseCols"
+            options={GLUCOSE_REPORT_COLUMNS.map((c) => ({ value: c, label: GLUCOSE_REPORT_COLUMN_LABELS[c] }))}
+          />
+        </div>
+      ) : null}
 
       <fieldset>
         <legend className="eyebrow mb-3">Format</legend>

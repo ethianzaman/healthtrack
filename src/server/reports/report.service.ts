@@ -46,7 +46,7 @@ export async function generateReport(params: {
     medications: query.sections.includes("medications"),
   });
   const generator = generators[query.format];
-  const body = await generator.generate({ data, model: buildReportModel(data, timeZone), timeZone });
+  const body = await generator.generate({ data, model: buildReportModel(data, timeZone, { bp: query.bpColumns, glucose: query.glucoseColumns }), timeZone });
 
   return {
     body,

@@ -1,6 +1,8 @@
 "use client";
 
+import { Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { DatePicker, toYmd } from "@/components/ui/date-picker";
 import { StatusMessage } from "@/components/ui/feedback";
 import { Field, Input, Select } from "@/components/ui/form-controls";
 import { GENDER_LABELS, GLUCOSE_UNIT_LABELS, toOptions } from "@/domain/enums";
@@ -58,7 +60,13 @@ export function ProfileForm({
           {(a) => <Input placeholder="Self, Father, Mother..." {...a} {...register("relation")} />}
         </Field>
         <Field label="Date of birth" error={errorOf("dateOfBirth")}>
-          {(a) => <Input type="date" {...a} {...register("dateOfBirth", optionalString)} />}
+          {(a) => (
+            <Controller
+              control={form.control}
+              name="dateOfBirth"
+              render={({ field }) => <DatePicker {...a} value={field.value ?? ""} onChange={(v) => field.onChange(v || undefined)} max={toYmd(new Date())} yearDropdown clearable placeholder="Select date of birth" />}
+            />
+          )}
         </Field>
         <Field label="Gender" error={errorOf("gender")}>
           {(a) => <Select options={genderOptions} placeholder="Prefer not to say" {...a} {...register("gender", optionalString)} />}

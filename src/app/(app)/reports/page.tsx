@@ -28,13 +28,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <CardBody>
             <ol className="space-y-2.5 text-sm text-ink-2">
               {[
-                "Patient details and personal targets",
-                "Morning against evening blood pressure",
-                "Glucose before and after meals",
-                "ACC/AHA classification, time in range",
-                "Estimated A1C and low episodes",
-                "Current medicines",
-                "Every reading, in an appendix",
+                "Blood Pressure Report: one row per day, morning and night side by side",
+                "Glucose Report: fasting, before and after meals on one row per day",
+                "Values in mmol/L or mg/dL, with the time beside each reading",
+                "A Status column for every day: Normal, High or Danger (ACC/AHA, ADA)",
+                "Medication list on its own page",
               ].map((item, i) => (
                 <li key={item} className="grid grid-cols-[24px_1fr]">
                   <span className="font-mono text-[11px] text-accent">{String(i + 1).padStart(2, "0")}</span>

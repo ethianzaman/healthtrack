@@ -1,7 +1,8 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { useFieldArray } from "react-hook-form";
+import { Controller, useFieldArray } from "react-hook-form";
+import { DatePicker, toYmd } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { StatusMessage } from "@/components/ui/feedback";
 import { Field, Input } from "@/components/ui/form-controls";
@@ -50,7 +51,13 @@ export function PrescriptionReview({
           {(a) => <Input placeholder="Dr. ..." {...a} {...register("doctorName", optionalString)} />}
         </Field>
         <Field label="Prescription date" error={errorOf("issuedOn")}>
-          {(a) => <Input type="date" {...a} {...register("issuedOn", optionalString)} />}
+          {(a) => (
+            <Controller
+              control={control}
+              name="issuedOn"
+              render={({ field }) => <DatePicker {...a} value={field.value ?? ""} onChange={(v) => field.onChange(v || undefined)} max={toYmd(new Date())} clearable />}
+            />
+          )}
         </Field>
       </div>
 

@@ -15,3 +15,12 @@ export const SEVERITY_HEX: Record<Severity, string> = {
   high: "#c2410c",
   critical: "#b91c1c",
 };
+
+/** Soft tints behind status pills. Mirrors the --color-sev-*-bg tokens in globals.css. */
+export const SEVERITY_BG_HEX: Record<Severity, string> = {
+  low: "#eff6ff",
+  normal: "#ecfdf5",
+  elevated: "#fffbeb",
+  high: "#fff7ed",
+  critical: "#fef2f2",
+};
