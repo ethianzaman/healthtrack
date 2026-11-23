@@ -18,6 +18,16 @@ const envSchema = z.object({
   SUPPORT_EMAIL: z.string().optional(),
   /** Vercel sends this as a Bearer token to cron routes. */
   CRON_SECRET: z.string().optional(),
+  /**
+   * Supabase Storage for test report photos/PDFs (private bucket). Without these, files are kept
+   * in the database instead, which works but fills it up faster.
+   */
+  SUPABASE_URL: z.url().optional().or(z.literal("")),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9_-]{1,62}$/).default("health-files"),
+  /** Google Gemini key for reading prescription photos. Without it, photos are read on the device (less accurate). */
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().regex(/^[a-z0-9.-]+$/).default("gemini-2.5-flash"),
 });
 
 export type Env = z.infer<typeof envSchema>;

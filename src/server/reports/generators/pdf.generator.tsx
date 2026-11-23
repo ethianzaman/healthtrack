@@ -24,6 +24,7 @@ const styles = StyleSheet.create({
   key: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 14, marginBottom: 4 },
   keyLabel: { fontSize: 7.5, color: MUTED, marginRight: 6, letterSpacing: 0.6 },
   table: { marginTop: 16 },
+  tableHeading: { fontSize: 12, fontFamily: "Helvetica-Bold", color: INK, marginBottom: 8 },
   headRow: { flexDirection: "row", borderBottomWidth: 1.2, borderBottomColor: INK, paddingBottom: 6 },
   headCell: { paddingHorizontal: 6, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: MUTED, letterSpacing: 0.6, textTransform: "uppercase" },
   row: { flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: LINE, paddingVertical: 7 },
@@ -82,6 +83,7 @@ function Table({ table }: { table: ReportTable }) {
   const flex = (i: number) => ({ flex: table.widths?.[i] ?? 1 });
   return (
     <View style={styles.table}>
+      {table.heading ? <Text style={styles.tableHeading}>{table.heading}</Text> : null}
       {/* Repeats at the top of every page the table runs onto. */}
       <View style={styles.headRow} fixed>
         {table.columns.map((c, i) => (

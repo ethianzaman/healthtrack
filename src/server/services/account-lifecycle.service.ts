@@ -15,6 +15,7 @@ import type { SafeUser } from "@/server/repositories/user.repository";
 import { isAdminEmail } from "@/server/auth/admin";
 import { activityService } from "./activity.service";
 import { loadHealthData } from "./health-data.service";
+import { labFileService } from "./lab-file.service";
 
 const SYSTEM = "system";
 
@@ -140,7 +141,7 @@ export const accountLifecycleService = {
     for (const user of await repo.dueForDeletion(now)) {
       try {
         await notify({ to: user.email, ...accountDeleted(user.name) });
-        await repo.deleteAccount({ userId: user.id, email: user.email, reason: user.statusReason, actor: SYSTEM });
+        await labFileService.deleteWith({ userId: user.id }, () => repo.deleteAccount({ userId: user.id, email: user.email, reason: user.statusReason, actor: SYSTEM }));
         result.deleted++;
       } catch (error) {
         result.failed++;

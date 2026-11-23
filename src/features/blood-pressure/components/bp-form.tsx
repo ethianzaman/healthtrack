@@ -7,20 +7,33 @@ import { Field, Input, Select } from "@/components/ui/form-controls";
 import { SeverityBadge } from "@/components/ui/severity-badge";
 import { classifyBloodPressure } from "@/domain/blood-pressure";
 import { ARM_LABELS, toOptions } from "@/domain/enums";
+import type { BloodPressureReading } from "@/generated/prisma/client";
 import { optionalNumber, optionalString, requiredNumber, useActionForm } from "@/hooks/use-action-form";
-import { localInputToIso, ReadingMetaFields } from "@/features/shared/components/reading-meta-fields";
-import { addBpReading } from "../actions";
-import { bpReadingSchema } from "../schemas";
+import { localInputToIso, ReadingMetaFields, toLocalInputValue } from "@/features/shared/components/reading-meta-fields";
+import { addBpReading, updateBpReading } from "../actions";
+import { bpReadingSchema, type BpReadingInput } from "../schemas";
 
 const armOptions = toOptions(ARM_LABELS);
 
-export function BpForm() {
+/** Log a new reading, or (with `reading`) correct an existing one. */
+export function BpForm({ reading, onDone }: { reading?: BloodPressureReading; onDone?: () => void } = {}) {
   const { form, onSubmit, status, errorOf, isSubmitting } = useActionForm({
     schema: bpReadingSchema,
-    action: addBpReading,
-    defaultValues: { timeOfDay: "MORNING", measuredAt: "" },
+    action: reading ? (v: BpReadingInput) => updateBpReading({ ...v, id: reading.id }) : addBpReading,
+    defaultValues: reading
+      ? {
+          systolic: reading.systolic,
+          diastolic: reading.diastolic,
+          pulse: reading.pulse ?? undefined,
+          timeOfDay: reading.timeOfDay,
+          arm: reading.arm ?? undefined,
+          measuredAt: toLocalInputValue(new Date(reading.measuredAt)),
+          note: reading.note ?? undefined,
+        }
+      : { timeOfDay: "MORNING", measuredAt: "" },
     transform: (v) => ({ ...v, measuredAt: localInputToIso(v.measuredAt) }),
-    resetOnSuccess: (current) => ({ ...current, systolic: undefined, diastolic: undefined, pulse: undefined, note: undefined }),
+    resetOnSuccess: reading ? false : (current) => ({ ...current, systolic: undefined, diastolic: undefined, pulse: undefined, note: undefined }),
+    onSuccess: () => onDone?.(),
   });
   const { register, watch } = form;
   const [sys, dia] = watch(["systolic", "diastolic"]);
@@ -55,9 +68,16 @@ export function BpForm() {
         </div>
 
         <StatusMessage status={status} />
-        <Button type="submit" loading={isSubmitting} className="w-full sm:w-auto">
-          Save reading
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" loading={isSubmitting} className="w-full sm:w-auto">
+            {reading ? "Save changes" : "Save reading"}
+          </Button>
+          {reading && onDone ? (
+            <Button type="button" variant="ghost" onClick={onDone}>
+              Cancel
+            </Button>
+          ) : null}
+        </div>
       </form>
     </FormProvider>
   );

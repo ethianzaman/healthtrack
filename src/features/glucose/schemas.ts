@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { GLUCOSE_UNIT_VALUES, MEAL_TIMING_VALUES, TIME_OF_DAY_VALUES } from "@/domain/enums";
 import { GLUCOSE_LIMITS_MG_DL, toMgDl } from "@/domain/glucose";
-import { measuredAtSchema, noteSchema } from "@/features/shared/schemas";
+import { idSchema, measuredAtSchema, noteSchema } from "@/features/shared/schemas";
 
 export const glucoseReadingSchema = z
   .object({
@@ -19,5 +19,7 @@ export const glucoseReadingSchema = z
     },
     { path: ["value"], message: "Value is outside the measurable range" },
   );
+
+export const updateGlucoseReadingSchema = glucoseReadingSchema.and(idSchema);
 
 export type GlucoseReadingInput = z.infer<typeof glucoseReadingSchema>;

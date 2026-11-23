@@ -1,3 +1,5 @@
+import type { MedicationMealTiming } from "./medication";
+
 /**
  * Turns raw OCR text from a prescription photo into a draft the user reviews.
  * Pure and dependency-free (runs in the browser next to the OCR engine).
@@ -10,7 +12,14 @@ export interface DraftMedication {
   name: string;
   dosage: string;
   schedule: string;
+  /** Before / after meal etc., when the prescription says so. */
+  mealTiming?: MedicationMealTiming;
+  /** Course length in days; null = "continue"; undefined = not written. */
+  durationDays?: number | null;
   notes: string;
+  /** Tablet, Capsule... and the generic name, when known (AI reading + DGDA match). */
+  form?: string;
+  generic?: string;
 }
 
 export interface PrescriptionDraft {
@@ -18,6 +27,8 @@ export interface PrescriptionDraft {
   /** yyyy-mm-dd, or "" when not found. */
   issuedOn: string;
   condition: string;
+  /** e.g. "Cardiologist", when the pad says so (AI reading). */
+  doctorSpecialty?: string;
   medications: DraftMedication[];
 }
 
@@ -37,11 +48,11 @@ const LATIN_SCHEDULE: [RegExp, string][] = [
   [/\bo\.?d\b|\bonce\s+(?:a\s+)?daily\b/i, "1+0+0"],
   [/\bs\.?o\.?s\b|\bp\.?r\.?n\b|\bif\s+needed\b/i, "when needed"],
 ];
-const MEAL: [RegExp, string][] = [
-  [/\b(?:after\s+(?:meals?|food|eating)|p\.?c\.?)\b/i, "after meal"],
-  [/\b(?:before\s+(?:meals?|food|eating)|a\.?c\.?)\b/i, "before meal"],
-  [/\bempty\s+stomach\b/i, "empty stomach"],
-  [/\bwith\s+(?:meals?|food)\b/i, "with meal"],
+const MEAL: [RegExp, MedicationMealTiming][] = [
+  [/\b(?:after\s+(?:meals?|food|eating)|p\.?c\.?)\b/i, "AFTER_MEAL"],
+  [/\b(?:before\s+(?:meals?|food|eating)|a\.?c\.?)\b/i, "BEFORE_MEAL"],
+  [/\bempty\s+stomach\b/i, "EMPTY_STOMACH"],
+  [/\bwith\s+(?:meals?|food)\b/i, "WITH_MEAL"],
 ];
 const DURATION = /\b(\d{1,3})\s*(days?|d|weeks?|wks?|w|months?|mo)\b|\b(continue|cont\.?|ongoing)\b/i;
 
@@ -83,20 +94,22 @@ function scheduleOf(text: string) {
   return LATIN_SCHEDULE.find(([re]) => re.test(text))?.[1] ?? "";
 }
 
-function notesOf(text: string) {
-  const parts: string[] = [];
-  const meal = MEAL.find(([re]) => re.test(text))?.[1];
-  if (meal) parts.push(meal);
-  const d = text.match(DURATION);
-  if (d) parts.push(d[3] ? "continue" : `${d[1]} ${normaliseUnit(d[2], Number(d[1]))}`);
-  return parts.join(", ");
+function mealTimingOf(text: string): MedicationMealTiming | undefined {
+  return MEAL.find(([re]) => re.test(text))?.[1];
 }
 
-function normaliseUnit(unit: string, n: number) {
-  const u = unit.toLowerCase();
-  const base = u.startsWith("d") ? "day" : u.startsWith("w") ? "week" : "month";
-  return n === 1 ? base : `${base}s`;
+/** "14 days" -> 14, "2 weeks" -> 14, "1 month" -> 30, "continue" -> null, nothing -> undefined. */
+function durationDaysOf(text: string): number | null | undefined {
+  const d = text.match(DURATION);
+  if (!d) return undefined;
+  if (d[3]) return null;
+  const n = Number(d[1]);
+  const unit = d[2].toLowerCase();
+  return unit.startsWith("d") ? n : unit.startsWith("w") ? n * 7 : n * 30;
 }
+
+/** Whether a line carries dosing instructions (it then belongs to the medicine above it). */
+const hasInstructions = (text: string) => Boolean(mealTimingOf(text)) || durationDaysOf(text) !== undefined;
 
 function isMedicineStart(line: string) {
   if (FORM_PREFIX.test(line)) return true;
@@ -118,7 +131,9 @@ function medicineFrom(block: string[]): DraftMedication | null {
     name: formWord ? `${capitalise(formWord.replace(/\.$/, ""))} ${capitaliseWords(name)}` : capitaliseWords(name),
     dosage: dose.replace(/\s+/g, " ").replace(/(\d)\s+(?=[a-z%])/i, "$1 ").trim(),
     schedule: scheduleOf(all),
-    notes: notesOf(rest.length ? all : first),
+    mealTiming: mealTimingOf(rest.length ? all : first),
+    durationDays: durationDaysOf(rest.length ? all : first),
+    notes: "",
   };
 }
 
@@ -158,7 +173,7 @@ export function parsePrescriptionText(text: string): PrescriptionDraft {
     if (isMedicineStart(line)) {
       current = [line];
       blocks.push(current);
-    } else if (current && current.length < 3 && (scheduleOf(line) || notesOf(line)) && !DIAGNOSIS_LABEL.test(line)) {
+    } else if (current && current.length < 3 && (scheduleOf(line) || hasInstructions(line)) && !DIAGNOSIS_LABEL.test(line)) {
       // Instructions usually sit on the line(s) under the medicine name.
       current.push(line);
     } else {

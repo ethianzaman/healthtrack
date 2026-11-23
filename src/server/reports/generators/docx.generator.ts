@@ -54,6 +54,7 @@ function headerCell(text: string) {
 
 function table(t: ReportTable) {
   const out: (Paragraph | Table)[] = [
+    ...(t.heading ? [new Paragraph({ spacing: { before: 240, after: 100 }, children: [new TextRun({ text: t.heading, bold: true, size: 24, color: INK })] })] : []),
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: { top: none, bottom: none, left: none, right: none, insideHorizontal: thin, insideVertical: none },

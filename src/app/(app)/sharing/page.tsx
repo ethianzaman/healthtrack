@@ -29,7 +29,7 @@ export default async function SharingPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Logbook · 06"
+        eyebrow="Logbook · 08"
         title="Doctor access"
         description={`Give your doctor a secure, read-only link to ${profile.name}'s last 90 days - no account needed.`}
       />

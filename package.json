@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/migrate-remote.mjs --if-remote && prisma generate && next build",
+    "build": "node scripts/migrate-remote.mjs --if-remote && node scripts/seed-catalog.mjs --if-remote && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -13,12 +13,13 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
+    "db:migrate": "prisma migrate deploy",
     "db:deploy:remote": "node scripts/migrate-remote.mjs",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "catalog:fetch": "node scripts/fetch-dgda.mjs",
+    "catalog:seed": "node scripts/seed-catalog.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.3",

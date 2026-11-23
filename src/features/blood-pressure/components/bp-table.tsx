@@ -8,6 +8,7 @@ import { ARM_LABELS, TIME_OF_DAY_LABELS } from "@/domain/enums";
 import type { BloodPressureReading } from "@/generated/prisma/client";
 import { formatDateTime } from "@/lib/dates";
 import { deleteBpReading } from "../actions";
+import { BpEditButton } from "./bp-edit-button";
 
 export function BpTable({ readings, timeZone, editable = false }: { readings: BloodPressureReading[]; timeZone: string; editable?: boolean }) {
   const columns: Column<BloodPressureReading>[] = [
@@ -37,11 +38,14 @@ export function BpTable({ readings, timeZone, editable = false }: { readings: Bl
   if (editable) {
     columns.push({
       header: "",
-      className: "w-10 text-right",
+      className: "w-20 text-right",
       cell: (r) => (
-        <ActionButton action={deleteBpReading.bind(null, { id: r.id })} confirm="Delete this reading?" size="icon" label="Delete reading">
-          <Trash2 className="h-4 w-4 text-ink-3" />
-        </ActionButton>
+        <span className="inline-flex items-center gap-0.5">
+          <BpEditButton reading={r} />
+          <ActionButton action={deleteBpReading.bind(null, { id: r.id })} confirm="Delete this reading?" size="icon" label="Delete reading">
+            <Trash2 className="h-4 w-4 text-ink-3" />
+          </ActionButton>
+        </span>
       ),
     });
   }

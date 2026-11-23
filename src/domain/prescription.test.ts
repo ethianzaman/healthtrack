@@ -29,18 +29,18 @@ describe("parsePrescriptionText", () => {
 
   it("extracts each medicine with dose, 1+0+1 schedule and instructions from the next line", () => {
     expect(draft.medications).toEqual([
-      { name: "Tab Amdocal", dosage: "5 mg", schedule: "1+0+0", notes: "after meal, continue" },
-      { name: "Tab Comet", dosage: "500mg", schedule: "1+0+1", notes: "after meal, 30 days" },
-      { name: "Cap Seclo", dosage: "20 mg", schedule: "1+0+1", notes: "before meal, 14 days" },
-      { name: "Tab Rosuva", dosage: "10mg", schedule: "0+0+1", notes: "" },
+      { name: "Tab Amdocal", dosage: "5 mg", schedule: "1+0+0", mealTiming: "AFTER_MEAL", durationDays: null, notes: "" },
+      { name: "Tab Comet", dosage: "500mg", schedule: "1+0+1", mealTiming: "AFTER_MEAL", durationDays: 30, notes: "" },
+      { name: "Cap Seclo", dosage: "20 mg", schedule: "1+0+1", mealTiming: "BEFORE_MEAL", durationDays: 14, notes: "" },
+      { name: "Tab Rosuva", dosage: "10mg", schedule: "0+0+1", mealTiming: undefined, durationDays: undefined, notes: "" },
     ]);
   });
 
   it("understands Latin frequency abbreviations", () => {
     const d = parsePrescriptionText("Tab. Metformin 850 mg BD p.c.\nSyp. Ace 120mg/5ml TDS 5 days");
-    expect(d.medications.map((m) => [m.name, m.dosage, m.schedule, m.notes])).toEqual([
-      ["Tab Metformin", "850 mg", "1+0+1", "after meal"],
-      ["Syp Ace", "120mg/5ml", "1+1+1", "5 days"],
+    expect(d.medications.map((m) => [m.name, m.dosage, m.schedule, m.mealTiming, m.durationDays])).toEqual([
+      ["Tab Metformin", "850 mg", "1+0+1", "AFTER_MEAL", undefined],
+      ["Syp Ace", "120mg/5ml", "1+1+1", undefined, 5],
     ]);
   });
 

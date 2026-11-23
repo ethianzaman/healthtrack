@@ -8,6 +8,7 @@ import type { Profile } from "@/generated/prisma/client";
 import type { ProfileInput } from "@/features/profiles/schemas";
 import { AppError, notFound } from "@/server/errors";
 import { profileRepository } from "@/server/repositories/profile.repository";
+import { labFileService } from "./lab-file.service";
 
 const ACTIVE_PROFILE_COOKIE = "ht_profile";
 
@@ -69,7 +70,9 @@ export const profileService = {
   },
 
   async remove(userId: string, profileId: string) {
-    if (!(await profileRepository.deleteForUser(profileId, userId))) {
+    // Only this account's profile: the storage lookup is scoped to the owner too.
+    const deleted = await labFileService.deleteWith({ profileId, userId }, () => profileRepository.deleteForUser(profileId, userId));
+    if (!deleted) {
       throw new AppError("Profile not found or it is your primary profile.", "BAD_REQUEST");
     }
   },

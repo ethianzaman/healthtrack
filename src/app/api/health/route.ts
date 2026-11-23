@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 type Check = { ok: true } | { ok: false; error: string };
 
 /** Every table created by prisma/migrations; a partial migration fails the check. */
-const REQUIRED_TABLES = ["User", "Profile", "BloodPressureReading", "GlucoseReading", "Medication", "ShareLink", "Prescription", "ActivityEvent", "AdminAction", "OneTimeCode", "DeletedAccount"];
+const REQUIRED_TABLES = ["User", "Profile", "BloodPressureReading", "GlucoseReading", "Medication", "ShareLink", "Prescription", "ActivityEvent", "AdminAction", "OneTimeCode", "DeletedAccount", "MedicineCatalog", "HealthCondition", "LabReport", "LabReportFile", "LabReportFileChunk"];
 
 async function assertTables() {
   const rows = await db.$queryRaw<{ name: string }[]>`SELECT name FROM sqlite_master WHERE type = 'table'`;

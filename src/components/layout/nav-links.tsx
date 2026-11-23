@@ -21,6 +21,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/blood-pressure", label: "Blood pressure", short: "Pressure", icon: HeartPulse, primary: true },
   { href: "/glucose", label: "Glucose", short: "Glucose", icon: Droplet, primary: true },
   { href: "/medications", label: "Medications", short: "Medicines" },
+  { href: "/test-reports", label: "Test reports", short: "Tests" },
+  { href: "/conditions", label: "Health conditions", short: "Conditions" },
   { href: "/reports", label: "Reports", short: "Reports", icon: FileText, primary: true },
   { href: "/sharing", label: "Doctor access", short: "Doctor" },
   { href: "/settings", label: "Settings", short: "Settings" },

@@ -36,7 +36,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Logbook · 07" title="Settings" description="Manage patient profiles, targets and your account." />
+      <PageHeader eyebrow="Logbook · 09" title="Settings" description="Manage patient profiles, targets and your account." />
       <div className="space-y-6">
         <Card>
           <CardHeader title={`Profile: ${profile.name}`} description="Targets are used for classification, insights and reports." />

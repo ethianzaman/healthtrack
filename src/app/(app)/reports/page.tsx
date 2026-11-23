@@ -14,7 +14,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <PageHeader eyebrow="Logbook · 05" title="Reports" description={`Doctor-ready report for ${profile.name}`} />
+      <PageHeader eyebrow="Logbook · 07" title="Reports" description={`Doctor-ready report for ${profile.name}`} />
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <Card>
           <CardHeader title="Generate report" />
@@ -28,6 +28,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <CardBody>
             <ol className="space-y-2.5 text-sm text-ink-2">
               {[
+                "Health Summary: conditions, current treatment and what changed in the period",
                 "Blood Pressure Report: one row per day, morning and night side by side",
                 "Glucose Report: fasting, before and after meals on one row per day",
                 "Values in mmol/L or mg/dL, with the time beside each reading",

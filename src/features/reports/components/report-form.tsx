@@ -54,6 +54,8 @@ function ColumnPicker({ legend, hint, name, options }: { legend: string; hint: s
 export function ReportForm({ today, allowedFormats, action = "/api/reports" }: { today: string; allowedFormats: ReportFormat[]; action?: string }) {
   const [from, setFrom] = useState(shift(today, 29));
   const [to, setTo] = useState(today);
+  const [sections, setSections] = useState<string[]>([...REPORT_SECTIONS]);
+  const allChosen = sections.length === REPORT_SECTIONS.length;
   const [format, setFormat] = useState<ReportFormat>("pdf");
 
   return (
@@ -88,11 +90,27 @@ export function ReportForm({ today, allowedFormats, action = "/api/reports" }: {
       </div>
 
       <fieldset>
-        <legend className="eyebrow mb-3">Include</legend>
-        <div className="flex flex-wrap gap-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <legend className="eyebrow">Include</legend>
+          <button
+            type="button"
+            onClick={() => setSections(allChosen ? [] : [...REPORT_SECTIONS])}
+            className="rounded-md px-2 py-1.5 text-[13px] font-medium text-accent hover:bg-accent-soft"
+          >
+            {allChosen ? "Clear" : "Select all (full history)"}
+          </button>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-5">
           {REPORT_SECTIONS.map((s) => (
             <label key={s} className="flex min-h-11 items-center gap-2 text-sm text-ink-2 sm:min-h-0">
-              <input type="checkbox" name="sections" value={s} defaultChecked className="h-4 w-4 accent-ink" />
+              <input
+                type="checkbox"
+                name="sections"
+                value={s}
+                checked={sections.includes(s)}
+                onChange={(e) => setSections((cur) => (e.target.checked ? [...cur, s] : cur.filter((x) => x !== s)))}
+                className="h-4 w-4 accent-ink"
+              />
               {REPORT_SECTION_LABELS[s]}
             </label>
           ))}

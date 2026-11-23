@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { getEnv } from "@/config/env";
 import { logger } from "@/server/logger";
 import { accountLifecycleService } from "@/server/services/account-lifecycle.service";
+import { labFileService } from "@/server/services/lab-file.service";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,6 +19,7 @@ function authorized(request: Request) {
 export async function GET(request: Request) {
   if (!authorized(request)) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const result = await accountLifecycleService.runDaily();
+  await labFileService.keepAlive();
   logger.info("Account lifecycle run", result);
   return Response.json({ ok: true, ...result });
 }

@@ -165,6 +165,8 @@ model Profile {
   glucoseReadings       GlucoseReading[]
   medications           Medication[]
   prescriptions         Prescription[]
+  conditions            HealthCondition[]
+  labReports            LabReport[]
   shareLinks            ShareLink[]
 
   @@index([userId])
@@ -210,7 +212,18 @@ model Medication {
   notes          String?
   /// What the medicine treats, e.g. "Hypertension".
   condition      String?
+  /// Tablet, Capsule, Syrup... and the generic name (from the DGDA catalogue when picked there).
+  form           String?
+  generic        String?
+  /// BEFORE_MEAL | AFTER_MEAL | WITH_MEAL | EMPTY_STOMACH | ANY_TIME
+  mealTiming     String?
+  /// Course: starts on startDate; endDate null = continue until stopped. Past endDate = completed.
+  startDate      DateTime?
+  endDate        DateTime?
+  /// active=false means stopped early (by a doctor or the patient), with when and why.
   active         Boolean       @default(true)
+  stoppedAt      DateTime?
+  stopReason     String?
   /// Set when the medicine was added from a scanned prescription.
   prescriptionId String?
   prescription   Prescription? @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
@@ -223,17 +236,20 @@ model Medication {
 
 /// A doctor's prescription, read from a photo or typed in. Medicines link back to it.
 model Prescription {
-  id          String       @id @default(cuid())
-  profileId   String
-  profile     Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  doctorName  String?
-  issuedOn    DateTime?
+  id              String       @id @default(cuid())
+  profileId       String
+  profile         Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  doctorName      String?
+  /// e.g. "Cardiologist", "Diabetologist"
+  doctorSpecialty String?
+  issuedOn        DateTime?
   /// Diagnosis / what the treatment is for.
-  condition   String?
-  notes       String?
-  medications Medication[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  condition       String?
+  notes           String?
+  medications     Medication[]
+  labReports      LabReport[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@index([profileId, issuedOn])
 }
@@ -251,4 +267,91 @@ model ShareLink {
   createdAt      DateTime  @default(now())
 
   @@index([profileId])
+}
+
+/// Registered allopathic medicines of Bangladesh (DGDA list), for search-as-you-type when adding
+/// medicines. Reference data only: reloaded from prisma/data by scripts/seed-catalog.mjs; no user data here.
+model MedicineCatalog {
+  id       Int     @id @default(autoincrement())
+  brand    String
+  /// lower-case brand for prefix search
+  brandKey String
+  generic  String
+  strength String
+  form     String
+  company  String
+  dar      String?
+
+  @@index([brandKey])
+  @@index([generic])
+}
+
+/// A diagnosis being treated or monitored (e.g. Hypertension since 2019). Medicines and
+/// prescriptions refer to it by name in their "condition" text.
+model HealthCondition {
+  id          String    @id @default(cuid())
+  profileId   String
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String
+  /// ONGOING | RESOLVED
+  status      String    @default("ONGOING")
+  diagnosedOn DateTime?
+  resolvedOn  DateTime?
+  doctorName  String?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([profileId])
+}
+
+/// A medical test result (CBC, HbA1c, X-ray...) with one or more photos/PDF pages,
+/// optionally linked to the prescription (doctor) that asked for it.
+model LabReport {
+  id             String          @id @default(cuid())
+  profileId      String
+  profile        Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  title          String
+  /// Calendar date of the test, stored at UTC midnight.
+  testDate       DateTime?
+  labName        String?
+  prescriptionId String?
+  prescription   Prescription?   @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+  notes          String?
+  files          LabReportFile[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([profileId, testDate])
+  @@index([prescriptionId])
+}
+
+/// One photo or PDF of a test report. With cloud storage set up the file lives in a private
+/// Supabase bucket and only its location (storageKey) is kept here; otherwise the bytes are in
+/// LabReportFileChunk. Listing files never loads the bytes.
+model LabReportFile {
+  id         String               @id @default(cuid())
+  reportId   String
+  report     LabReport            @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  name       String
+  mimeType   String
+  size       Int
+  position   Int                  @default(0)
+  /// Path in the storage bucket, e.g. "{userId}/{profileId}/{reportId}/{fileId}.jpg". Null = bytes in chunks.
+  storageKey String?
+  /// Small preview image for lists (cloud storage only).
+  thumbKey   String?
+  chunks     LabReportFileChunk[]
+  createdAt  DateTime             @default(now())
+
+  @@index([reportId])
+}
+
+model LabReportFileChunk {
+  fileId String
+  file   LabReportFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  idx    Int
+  data   Bytes
+
+  @@id([fileId, idx])
 }

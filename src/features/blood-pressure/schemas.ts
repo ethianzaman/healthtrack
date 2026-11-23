@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BP_LIMITS } from "@/domain/blood-pressure";
 import { ARM_VALUES, TIME_OF_DAY_VALUES } from "@/domain/enums";
-import { intInRange, measuredAtSchema, noteSchema } from "@/features/shared/schemas";
+import { idSchema, intInRange, measuredAtSchema, noteSchema } from "@/features/shared/schemas";
 
 export const bpReadingSchema = z
   .object({
@@ -17,5 +17,7 @@ export const bpReadingSchema = z
     path: ["diastolic"],
     message: "Diastolic must be lower than systolic",
   });
+
+export const updateBpReadingSchema = bpReadingSchema.and(idSchema);
 
 export type BpReadingInput = z.infer<typeof bpReadingSchema>;

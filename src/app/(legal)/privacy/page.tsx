@@ -6,7 +6,7 @@ import { OTP_TTL_MINUTES } from "@/server/security/otp";
 
 export const metadata: Metadata = { title: "Privacy Policy" };
 
-const UPDATED = "20 November 2026";
+const UPDATED = "26 November 2026";
 
 export default function PrivacyPage() {
   const contact = supportEmail();
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
       <h2>What we store</h2>
       <ul>
         <li><strong>Account:</strong> name, email, a securely hashed password (never the password itself), time zone and plan.</li>
-        <li><strong>What you enter:</strong> blood pressure and glucose readings, notes, medicines, the conditions they treat, and family profiles.</li>
+        <li><strong>What you enter:</strong> blood pressure and glucose readings, notes, medicines, the conditions they treat, test reports (with the photos or PDFs you add) and family profiles.</li>
         <li><strong>Usage records:</strong> when you sign up, sign in (including failed attempts), download reports, create or use doctor links, and save a scanned prescription. We keep the date, the kind of action and your country - <strong>not your IP address</strong> and never the content of your readings.</li>
         <li><strong>Email codes:</strong> one-time codes expire after {OTP_TTL_MINUTES} minutes; only a scrambled (hashed) form is stored.</li>
       </ul>
@@ -27,7 +27,10 @@ export default function PrivacyPage() {
       <h2>What we don&apos;t do</h2>
       <ul>
         <li>We don&apos;t sell your data or use it for advertising.</li>
-        <li>Prescription photos are read <strong>on your own device</strong> and are never uploaded to us.</li>
+        <li>
+          Prescription photos are not stored. You choose how they are read: <strong>on your own device</strong> (nothing is uploaded), or with{" "}
+          <strong>AI</strong>, where the photo is sent to Google Gemini only to read the medicines.
+        </li>
         <li>Our admin panel shows account activity only (for example &ldquo;signed in&rdquo;, &ldquo;downloaded a PDF&rdquo;, number of readings). It does not show readings, medicines, conditions or notes.</li>
       </ul>
 
@@ -42,6 +45,14 @@ export default function PrivacyPage() {
         <li><strong>Vercel</strong> hosts the app (servers in Mumbai, India).</li>
         <li><strong>Turso</strong> hosts the database (Mumbai, India).</li>
         <li><strong>Google (Gmail)</strong> delivers our emails: codes and account notices.</li>
+        <li>
+          <strong>Supabase</strong> stores test report photos and PDFs in a private storage area. Files open only through short-lived links that we
+          create after checking that you (or your doctor link) may see them.
+        </li>
+        <li>
+          <strong>Google Gemini</strong> reads a prescription photo when you choose &ldquo;Read with AI&rdquo;. On Google&apos;s free service, Google
+          may use what is sent to improve its products; choose &ldquo;Read on this device&rdquo; if you prefer that nothing leaves your phone.
+        </li>
       </ul>
 
       <h2>Emails we send</h2>

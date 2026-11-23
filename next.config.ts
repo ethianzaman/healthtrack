@@ -22,7 +22,15 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      // Everything except report files: never framed.
+      { source: "/((?!api/lab-reports/files/|api/share/[^/]+/lab-files/).*)", headers: securityHeaders },
+      // Report files open inside our own page viewer (PDF iframe), so only same-origin framing is allowed.
+      {
+        source: "/api/(lab-reports/files|share/[^/]+/lab-files)/:path*",
+        headers: securityHeaders.map((h) => (h.key === "X-Frame-Options" ? { ...h, value: "SAMEORIGIN" } : h)),
+      },
+    ];
   },
 };
 

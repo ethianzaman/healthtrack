@@ -1,11 +1,13 @@
 import "server-only";
 import { siteConfig } from "@/config/site";
+import { MEAL_TIMING_TEXT, type MedicationMealTiming } from "@/domain/medication";
 import type { Severity } from "@/domain/severity";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import type { HealthData } from "@/server/services/health-data.service";
 import { BP_REPORT_COLUMNS, GLUCOSE_REPORT_COLUMNS, type BpReportColumn, type GlucoseReportColumn } from "@/features/reports/schemas";
 import { plain, type CellLine } from "./cells";
 import { dailyBloodPressureTable, dailyGlucoseTable } from "./daily-log";
+import { healthSummaryTables } from "./health-summary";
 
 export { cellText, plain, type CellLine } from "./cells";
 
@@ -31,6 +33,8 @@ export interface ReportRow {
  * rounding and classification are defined once.
  */
 export interface ReportTable {
+  /** Optional small heading above the table (when a section has more than one). */
+  heading?: string;
   columns: string[];
   /** Relative column widths (defaults to equal). */
   widths?: number[];
@@ -70,6 +74,10 @@ export function buildReportModel(data: HealthData, timeZone: string, columns: Re
   const lastDay = new Date(range.to.getTime() - 1);
 
   const sections: ReportSectionModel[] = [];
+  if (data.sections.summary) {
+    const tables = healthSummaryTables({ conditions: data.conditions, current: data.medications, all: data.allMedications, labReports: data.labReports, range, timeZone });
+    sections.push({ title: "Health Summary", tables, emptyMessage: tables.length ? undefined : "No conditions, treatment changes or tests recorded yet." });
+  }
   if (data.sections.bp) {
     sections.push({
       title: "Blood Pressure Report",
@@ -85,7 +93,7 @@ export function buildReportModel(data: HealthData, timeZone: string, columns: Re
       tables: data.glucose.readings.length ? [dailyGlucoseTable(data.glucose.readings, timeZone, data.glucose.targets, columns.glucose)] : [],
     });
   }
-  if (data.sections.medications) sections.push(medicationSection(data));
+  if (data.sections.medications) sections.push(medicationSection(data, timeZone));
 
   return {
     title: "Health Report",
@@ -97,18 +105,41 @@ export function buildReportModel(data: HealthData, timeZone: string, columns: Re
   };
 }
 
-function medicationSection({ medications }: HealthData): ReportSectionModel {
-  return {
-    title: "Medication List",
-    emptyMessage: medications.length === 0 ? "No active medications recorded." : undefined,
-    tables: medications.length
-      ? [
-          {
-            columns: ["Medicine", "Dosage", "Schedule", "For", "Notes"],
-            widths: [1.4, 0.8, 1, 1.2, 1.4],
-            rows: medications.map((m) => ({ cells: [m.name, m.dosage, m.schedule, m.condition ?? "", m.notes ?? ""].map(plain) })),
-          },
-        ]
-      : [],
-  };
+type Med = HealthData["medications"][number];
+
+const doctorOf = (m: Med) => [m.prescription?.doctorName, m.prescription?.doctorSpecialty].filter(Boolean).join(", ");
+const nameCell = (m: Med): CellLine[] => [{ text: m.name, note: [m.form, m.generic].filter(Boolean).join(" · ") || undefined }];
+const howCell = (m: Med): CellLine[] => [{ text: [m.dosage, m.schedule].filter(Boolean).join("  "), note: m.mealTiming ? MEAL_TIMING_TEXT[m.mealTiming as MedicationMealTiming] : undefined }];
+
+function medicationSection({ medications, endedMedications }: HealthData, timeZone: string): ReportSectionModel {
+  // Grouped by doctor so treatments from different doctors read as separate prescriptions.
+  const current = [...medications].sort((a, b) => doctorOf(a).localeCompare(doctorOf(b)) || a.name.localeCompare(b.name));
+  const tables: ReportTable[] = [];
+  if (current.length) {
+    tables.push({
+      heading: "Current medicines",
+      columns: ["Medicine", "Strength & schedule", "Until", "For", "Prescribed by"],
+      widths: [1.5, 1.3, 0.8, 1.1, 1.2],
+      rows: current.map((m) => ({
+        cells: [nameCell(m), howCell(m), plain(m.endDate ? formatDate(m.endDate, timeZone) : "Continue"), plain(m.condition ?? ""), plain(doctorOf(m))],
+      })),
+    });
+  }
+  if (endedMedications.length) {
+    tables.push({
+      heading: "Stopped or finished in this period",
+      columns: ["Medicine", "Strength & schedule", "Ended", "Why", "Prescribed by"],
+      widths: [1.5, 1.3, 0.8, 1.1, 1.2],
+      rows: endedMedications.map((m) => ({
+        cells: [
+          nameCell(m),
+          howCell(m),
+          plain(formatDate((m.stoppedAt ?? m.endDate)!, timeZone)),
+          plain(m.stoppedAt ? m.stopReason || "Stopped" : "Course finished"),
+          plain(doctorOf(m)),
+        ],
+      })),
+    });
+  }
+  return { title: "Medication List", emptyMessage: tables.length ? undefined : "No medicines recorded for this period.", tables };
 }

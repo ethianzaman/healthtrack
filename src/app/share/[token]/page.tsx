@@ -7,7 +7,10 @@ import { siteConfig } from "@/config/site";
 import { BpTable } from "@/features/blood-pressure/components/bp-table";
 import { HealthOverview } from "@/features/dashboard/components/health-overview";
 import { GlucoseTable } from "@/features/glucose/components/glucose-table";
+import { LabReportCard } from "@/features/lab-reports/components/lab-report-card";
+import { toLabReportView } from "@/features/lab-reports/view";
 import { ageFrom, formatDate, formatDateTime, lastDaysRange } from "@/lib/dates";
+import { labReportRepository } from "@/server/repositories/lab-report.repository";
 import { loadHealthData } from "@/server/services/health-data.service";
 import { activityService } from "@/server/services/activity.service";
 import { shareService } from "@/server/services/share.service";
@@ -25,7 +28,8 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
 
   const { profile, timezone, link } = shared;
   const range = lastDaysRange(SHARE_WINDOW_DAYS, timezone);
-  const data = await loadHealthData(profile, range);
+  // Test reports: the whole history, since older results matter for comparison.
+  const [data, labReports] = await Promise.all([loadHealthData(profile, range), labReportRepository.list(profile.id)]);
   const age = ageFrom(profile.dateOfBirth);
   const reportHref = `/api/share/${token}/report?from=${range.fromYmd}&to=${range.toYmd}&format=pdf&sections=bp&sections=glucose&sections=medications`;
 
@@ -75,6 +79,16 @@ export default async function SharedReportPage({ params }: { params: Promise<{ t
                 </li>
               ))}
             </ul>
+          </Card>
+        ) : null}
+        {labReports.length > 0 ? (
+          <Card>
+            <CardHeader title={`Test reports (${labReports.length})`} description="Tap a page to view it full size." />
+            <div className="space-y-3 px-4 pb-4 sm:px-5">
+              {labReports.map((r) => (
+                <LabReportCard key={r.id} report={toLabReportView(r)} fileBase={`/api/share/${token}/lab-files/`} readOnly />
+              ))}
+            </div>
           </Card>
         ) : null}
         <p className="text-center text-xs text-ink-3">{siteConfig.disclaimer}</p>

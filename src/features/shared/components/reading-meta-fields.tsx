@@ -32,7 +32,7 @@ const timeOfDayOptions = toOptions(TIME_OF_DAY_LABELS);
  * Picks "Morning/Evening..." automatically from the chosen time (user can override).
  */
 export function ReadingMetaFields() {
-  const { register, setValue, formState, control } = useFormContext<ReadingMeta>();
+  const { register, setValue, getValues, formState, control } = useFormContext<ReadingMeta>();
   const errors = formState.errors;
   const { field } = useController({ control, name: "measuredAt" });
   const [datePart = "", timePart = ""] = (field.value ?? "").split("T");
@@ -45,18 +45,20 @@ export function ReadingMetaFields() {
   }
 
   // Set "now" after mount to avoid server/client clock & timezone mismatch.
+  // Editing an existing reading keeps its own date and time.
   useEffect(() => {
+    if (getValues("measuredAt")) return;
     const now = new Date();
     setValue("measuredAt", toLocalInputValue(now));
     setValue("timeOfDay", suggestTimeOfDay(now.getHours()));
-  }, [setValue]);
+  }, [setValue, getValues]);
 
   return (
     <>
       <Field label="Date & time" error={errors.measuredAt?.message}>
         {(a) => (
           <div className="flex flex-wrap gap-2">
-            <DatePicker className="min-w-[11.5rem] flex-1" id={a.id} aria-invalid={a["aria-invalid"]} aria-describedby={a["aria-describedby"]} value={datePart} max={toYmd(new Date())} onChange={(d) => setMeasuredAt(d, timePart)} />
+            <DatePicker className="min-w-46 flex-1" id={a.id} aria-invalid={a["aria-invalid"]} aria-describedby={a["aria-describedby"]} value={datePart} max={toYmd(new Date())} onChange={(d) => setMeasuredAt(d, timePart)} />
             <div className="flex flex-1 gap-2 sm:flex-none">
               <TimePicker aria-label="Time" value={timePart} onChange={(t) => setMeasuredAt(datePart, t)} className="min-w-38 flex-1 sm:w-40 sm:flex-none" />
               <button

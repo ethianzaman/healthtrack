@@ -41,6 +41,7 @@ export async function generateReport(params: {
 
   const range = zonedDayRange(query.from, query.to, timeZone);
   const data = await loadHealthData(profile, range, {
+    summary: query.sections.includes("summary"),
     bp: query.sections.includes("bp"),
     glucose: query.sections.includes("glucose"),
     medications: query.sections.includes("medications"),

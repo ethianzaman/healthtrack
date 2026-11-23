@@ -25,6 +25,11 @@ export const bloodPressureRepository = {
     return db.bloodPressureReading.create({ data: { ...data, profileId } });
   },
 
+  async updateForProfile(id: string, profileId: string, data: Prisma.BloodPressureReadingUpdateManyMutationInput) {
+    const { count } = await db.bloodPressureReading.updateMany({ where: { id, profileId }, data });
+    return count > 0;
+  },
+
   async deleteForProfile(id: string, profileId: string) {
     const { count } = await db.bloodPressureReading.deleteMany({ where: { id, profileId } });
     return count > 0;
@@ -46,6 +51,11 @@ export const glucoseRepository = {
 
   create(profileId: string, data: Omit<Prisma.GlucoseReadingUncheckedCreateInput, "profileId">) {
     return db.glucoseReading.create({ data: { ...data, profileId } });
+  },
+
+  async updateForProfile(id: string, profileId: string, data: Prisma.GlucoseReadingUpdateManyMutationInput) {
+    const { count } = await db.glucoseReading.updateMany({ where: { id, profileId }, data });
+    return count > 0;
   },
 
   async deleteForProfile(id: string, profileId: string) {

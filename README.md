@@ -94,7 +94,9 @@ src/
 ## Production
 
 - **Database:** set `DATABASE_URL=libsql://...` and `DATABASE_AUTH_TOKEN` to use Turso with no code change. For PostgreSQL, set `provider = "postgresql"` in the schema and swap the adapter in [src/server/db/client-factory.ts](src/server/db/client-factory.ts) (`@prisma/adapter-pg`).
-- **Deploy:** the `Dockerfile` builds a standalone image (non-root, with a healthcheck). Run `npm run db:deploy` (prisma migrate deploy) as a release step.
+- **Deploy:** the `Dockerfile` builds a standalone image (non-root, with a healthcheck). Run `npm run db:migrate` (prisma migrate deploy: applies pending migrations, never resets data) as a release step. On Vercel + Turso, `npm run build` applies migrations and loads the medicine catalogue automatically.
+- **Test report files (optional):** set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API). Files then go to a private bucket (created on first upload, name from `SUPABASE_BUCKET`, default `health-files`) and the database keeps only their location. Without these, files are stored in the database. Files already in the database keep working after you switch.
+- **AI prescription reading (optional):** set `GEMINI_API_KEY` (free key at https://aistudio.google.com/apikey; model from `GEMINI_MODEL`, default `gemini-2.5-flash`). Without it, photos are read on the device with Tesseract. Typing a prescription in by hand always works.
 - **CI:** [.github/workflows/ci.yml](.github/workflows/ci.yml) runs typecheck, lint, tests, migrations and the build.
 - **Scaling:** the in-memory rate limiter is per instance. Use Redis/Upstash with more than one replica.
 

@@ -4,7 +4,8 @@ import { ymdSchema } from "@/features/shared/schemas";
 export const REPORT_FORMATS = ["pdf", "docx", "csv"] as const;
 export type ReportFormat = (typeof REPORT_FORMATS)[number];
 
-export const REPORT_SECTIONS = ["bp", "glucose", "medications"] as const;
+/** Order here is the order of pages in the report. */
+export const REPORT_SECTIONS = ["summary", "bp", "glucose", "medications"] as const;
 export type ReportSection = (typeof REPORT_SECTIONS)[number];
 
 export const REPORT_FORMAT_LABELS: Record<ReportFormat, { label: string; hint: string }> = {
@@ -14,6 +15,7 @@ export const REPORT_FORMAT_LABELS: Record<ReportFormat, { label: string; hint: s
 };
 
 export const REPORT_SECTION_LABELS: Record<ReportSection, string> = {
+  summary: "Health summary (conditions, treatment, changes)",
   bp: "Blood pressure",
   glucose: "Blood glucose",
   medications: "Medications",

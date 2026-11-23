@@ -91,3 +91,13 @@ body {
     color-mix(in oklab, var(--color-line) 70%, transparent) 32px
   );
 }
+
+/* Indeterminate progress bar (AI prescription reading). */
+@keyframes scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}

@@ -8,6 +8,7 @@ import { classifyGlucose, formatGlucose, type GlucoseTargets } from "@/domain/gl
 import type { GlucoseReading } from "@/generated/prisma/client";
 import { formatDateTime } from "@/lib/dates";
 import { deleteGlucoseReading } from "../actions";
+import { GlucoseEditButton } from "./glucose-edit-button";
 
 export function GlucoseTable({
   readings,
@@ -44,11 +45,14 @@ export function GlucoseTable({
   if (editable) {
     columns.push({
       header: "",
-      className: "w-10 text-right",
+      className: "w-20 text-right",
       cell: (r) => (
-        <ActionButton action={deleteGlucoseReading.bind(null, { id: r.id })} confirm="Delete this reading?" size="icon" label="Delete reading">
-          <Trash2 className="h-4 w-4 text-ink-3" />
-        </ActionButton>
+        <span className="inline-flex items-center gap-0.5">
+          <GlucoseEditButton reading={r} unit={unit} targets={targets} />
+          <ActionButton action={deleteGlucoseReading.bind(null, { id: r.id })} confirm="Delete this reading?" size="icon" label="Delete reading">
+            <Trash2 className="h-4 w-4 text-ink-3" />
+          </ActionButton>
+        </span>
       ),
     });
   }
